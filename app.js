@@ -1,10 +1,27 @@
-// FindOurOwn - Vanilla JavaScript App
+// FindOurOwn - Vanilla JavaScript App with Mocked API
 class FindOurOwnApp {
     constructor() {
         this.currentPage = 'home';
-        this.user = null;
+        this.user = { id: 1, name: 'Demo User', role: 'user' }; // Auto-login for demo
         this.apiBase = '/api/trpc';
         this.mobileMenuOpen = false;
+        
+        // Dummy Data
+        this.dummyMissing = [
+            { id: 1, name: 'Chidi Okafor', age: 12, gender: 'Male', state: 'Lagos', lastSeenLocation: 'Ikeja Along', description: 'Last seen wearing a blue school uniform. Height approx 4ft 5in.', phoneNumber: '08012345678', showPhonePublicly: true },
+            { id: 2, name: 'Amina Bello', age: 24, gender: 'Female', state: 'Ogun', lastSeenLocation: 'Mowe Bus Stop', description: 'Fair complexion, wearing a green hijab and black dress.', phoneNumber: '08123456789', showPhonePublicly: false },
+            { id: 3, name: 'Oluwaseun Adeyemi', age: 8, gender: 'Male', state: 'Lagos', lastSeenLocation: 'Lekki Phase 1', description: 'Short hair, birthmark on left arm. Wearing a red t-shirt.', phoneNumber: '07034567890', showPhonePublicly: true },
+            { id: 4, name: 'Blessing Emmanuel', age: 19, gender: 'Female', state: 'Ogun', lastSeenLocation: 'Sango Ota', description: 'Slim build, dark skin. Last seen heading to the market.', phoneNumber: '09045678901', showPhonePublicly: true },
+            { id: 5, name: 'Tunde Bakare', age: 45, gender: 'Male', state: 'Lagos', lastSeenLocation: 'Oshodi Market', description: 'Wearing a grey native attire. Speaks Yoruba fluently.', phoneNumber: '08056789012', showPhonePublicly: false }
+        ];
+
+        this.dummyFound = [
+            { id: 101, description: 'Young boy found wandering near Ojota. Wearing a yellow shirt. Seems confused.', currentLocation: 'Ojota Police Station', state: 'Lagos' },
+            { id: 102, description: 'Elderly woman found in Abeokuta. Cannot remember her home address. Wearing a floral wrapper.', currentLocation: 'St. Peters Hospital', state: 'Ogun' },
+            { id: 103, description: 'Toddler found at a park in Surulere. Wearing blue shorts and no shoes.', currentLocation: 'Community Center, Surulere', state: 'Lagos' },
+            { id: 104, description: 'Teenage girl found at a bus terminal. Carrying a small black backpack.', currentLocation: 'Red Cross Office, Ifo', state: 'Ogun' }
+        ];
+
         this.init();
     }
 
@@ -12,12 +29,11 @@ class FindOurOwnApp {
         this.setupViewport();
         this.setupRouting();
         this.setupTouchHandlers();
-        await this.checkAuth();
+        // Skip real auth for demo
         this.render();
     }
     
     setupViewport() {
-        // Ensure proper viewport for mobile
         let viewport = document.querySelector('meta[name="viewport"]');
         if (!viewport) {
             viewport = document.createElement('meta');
@@ -28,25 +44,25 @@ class FindOurOwnApp {
     }
     
     setupTouchHandlers() {
-        // Prevent double-tap zoom on buttons
         document.addEventListener('touchstart', (e) => {
             if (e.target.closest('.btn') || e.target.closest('a')) {
-                e.target.closest('.btn, a').style.opacity = '0.8';
+                const el = e.target.closest('.btn, a');
+                if (el) el.style.opacity = '0.8';
             }
         }, { passive: true });
         
         document.addEventListener('touchend', (e) => {
             if (e.target.closest('.btn') || e.target.closest('a')) {
-                e.target.closest('.btn, a').style.opacity = '1';
+                const el = e.target.closest('.btn, a');
+                if (el) el.style.opacity = '1';
             }
         }, { passive: true });
     }
 
     setupRouting() {
-        window.addEventListener('popstate', () => this.render());
-        // Close mobile menu on navigation
         window.addEventListener('popstate', () => {
             this.mobileMenuOpen = false;
+            this.render();
         });
     }
     
@@ -55,21 +71,11 @@ class FindOurOwnApp {
         this.render();
     }
 
-    async checkAuth() {
-        try {
-            const response = await fetch(`${this.apiBase}/auth.me?input={}`);
-            const data = await response.json();
-            if (data.result && data.result.data) {
-                this.user = data.result.data;
-            }
-        } catch (error) {
-            console.log('Not authenticated');
-        }
-    }
-
     navigate(page) {
         this.currentPage = page;
-        window.history.pushState({ page }, '', `/${page}`);
+        // In a real GitHub Pages environment, deep linking needs special handling.
+        // For this demo, we'll just update state and render.
+        window.history.pushState({ page }, '', '#/' + page);
         this.render();
     }
 
@@ -77,44 +83,23 @@ class FindOurOwnApp {
         const app = document.getElementById('app');
         app.innerHTML = '';
         
-        // Add Navigation
         app.appendChild(this.createNav());
         
-        // Add Page Content
         let content;
         switch(this.currentPage) {
-            case 'home':
-                content = this.renderHome();
-                break;
-            case 'report-missing':
-                content = this.renderReportMissing();
-                break;
-            case 'report-found':
-                content = this.renderReportFound();
-                break;
-            case 'missing-persons':
-                content = this.renderMissingPersons();
-                break;
-            case 'found-persons':
-                content = this.renderFoundPersons();
-                break;
-            case 'dashboard':
-                content = this.renderDashboard();
-                break;
-            case 'admin':
-                content = this.renderAdmin();
-                break;
-            case 'messages':
-                content = this.renderMessages();
-                break;
-            default:
-                content = this.renderHome();
+            case 'home': content = this.renderHome(); break;
+            case 'report-missing': content = this.renderReportMissing(); break;
+            case 'report-found': content = this.renderReportFound(); break;
+            case 'missing-persons': content = this.renderMissingPersons(); break;
+            case 'found-persons': content = this.renderFoundPersons(); break;
+            case 'dashboard': content = this.renderDashboard(); break;
+            case 'messages': content = this.renderMessages(); break;
+            default: content = this.renderHome();
         }
         
         app.appendChild(content);
-        
-        // Add Footer
         app.appendChild(this.createFooter());
+        window.scrollTo(0, 0);
     }
 
     createNav() {
@@ -125,19 +110,18 @@ class FindOurOwnApp {
                     <div class="logo-icon">❤️</div>
                     <span>FindOurOwn</span>
                 </a>
-                <ul>
+                <ul class="${this.mobileMenuOpen ? 'active' : ''}">
                     <li><a href="#" onclick="app.navigate('missing-persons'); return false;">Missing</a></li>
                     <li><a href="#" onclick="app.navigate('found-persons'); return false;">Found</a></li>
                     <li><a href="#" onclick="app.navigate('report-missing'); return false;">Report</a></li>
                     ${this.user ? `
                         <li><a href="#" onclick="app.navigate('dashboard'); return false;">Dashboard</a></li>
-                        <li><a href="#" onclick="app.navigate('messages'); return false;">Messages</a></li>
-                        ${this.user.role === 'admin' ? `<li><a href="#" onclick="app.navigate('admin'); return false;">Admin</a></li>` : ''}
                         <li><a href="#" onclick="app.logout(); return false;">Logout</a></li>
                     ` : `
-                        <li><a href="/api/oauth/login?returnPath=/" class="btn btn-primary">Login</a></li>
+                        <li><a href="#" onclick="app.navigate('home'); return false;" class="btn btn-primary">Login</a></li>
                     `}
                 </ul>
+                <div class="mobile-toggle" onclick="app.toggleMobileMenu()">☰</div>
             </div>
         `;
         return nav;
@@ -156,11 +140,11 @@ class FindOurOwnApp {
                 </div>
                 <div class="stats">
                     <div class="stat">
-                        <div class="stat-number" id="active-reports">0</div>
+                        <div class="stat-number">${this.dummyMissing.length}</div>
                         <div class="stat-label">Active Reports</div>
                     </div>
                     <div class="stat">
-                        <div class="stat-number" id="volunteers-count">0</div>
+                        <div class="stat-number">124</div>
                         <div class="stat-label">Volunteers Helping</div>
                     </div>
                     <div class="stat">
@@ -170,23 +154,7 @@ class FindOurOwnApp {
                 </div>
             </div>
         `;
-        
-        // Load stats
-        this.loadStats();
-        
         return section;
-    }
-
-    async loadStats() {
-        try {
-            const response = await fetch(`${this.apiBase}/missingPerson.listApproved?input={}`);
-            const data = await response.json();
-            if (data.result && data.result.data) {
-                document.getElementById('active-reports').textContent = data.result.data.length;
-            }
-        } catch (error) {
-            console.error('Error loading stats:', error);
-        }
     }
 
     renderReportMissing() {
@@ -198,7 +166,7 @@ class FindOurOwnApp {
                     <form id="report-form" onsubmit="app.submitReport(event)">
                         <div class="form-group">
                             <label>Full Name *</label>
-                            <input type="text" name="name" required>
+                            <input type="text" name="name" required placeholder="Enter full name">
                         </div>
                         <div class="form-group">
                             <label>Age *</label>
@@ -223,30 +191,17 @@ class FindOurOwnApp {
                         </div>
                         <div class="form-group">
                             <label>Last Seen Location *</label>
-                            <input type="text" name="lastSeenLocation" required>
+                            <input type="text" name="lastSeenLocation" required placeholder="e.g. Oshodi Bus Stop">
                         </div>
                         <div class="form-group">
                             <label>Description *</label>
-                            <textarea name="description" required></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>Photo</label>
-                            <input type="file" name="photo" accept="image/*">
+                            <textarea name="description" required placeholder="Physical description, clothing, etc."></textarea>
                         </div>
                         <div class="form-group">
                             <label>Phone Number</label>
                             <input type="tel" name="phoneNumber">
                         </div>
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" name="showPhone"> Show my phone number publicly
-                            </label>
-                        </div>
-                        <div class="form-group">
-                            <label>Police Case Number (Optional)</label>
-                            <input type="text" name="policeCaseNumber">
-                        </div>
-                        <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Report</button>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Report (Demo)</button>
                     </form>
                 </div>
             </div>
@@ -254,115 +209,26 @@ class FindOurOwnApp {
         return section;
     }
 
-    async submitReport(event) {
+    submitReport(event) {
         event.preventDefault();
-        const form = event.target;
-        const formData = new FormData(form);
-        
-        try {
-            const response = await fetch(`${this.apiBase}/missingPerson.create`, {
-                method: 'POST',
-                body: JSON.stringify({
-                    name: formData.get('name'),
-                    age: parseInt(formData.get('age')),
-                    gender: formData.get('gender'),
-                    state: formData.get('state'),
-                    lastSeenLocation: formData.get('lastSeenLocation'),
-                    description: formData.get('description'),
-                    phoneNumber: formData.get('phoneNumber'),
-                    showPhonePublicly: formData.get('showPhone') ? true : false,
-                    policeCaseNumber: formData.get('policeCaseNumber'),
-                    photoUrl: null
-                }),
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (response.ok) {
-                alert('Report submitted successfully!');
-                this.navigate('missing-persons');
-            } else {
-                alert('Error submitting report');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Error submitting report');
-        }
+        const formData = new FormData(event.target);
+        const newPerson = {
+            id: Date.now(),
+            name: formData.get('name'),
+            age: formData.get('age'),
+            gender: formData.get('gender'),
+            state: formData.get('state'),
+            lastSeenLocation: formData.get('lastSeenLocation'),
+            description: formData.get('description'),
+            phoneNumber: formData.get('phoneNumber'),
+            showPhonePublicly: true
+        };
+        this.dummyMissing.unshift(newPerson);
+        alert('Demo: Report added successfully!');
+        this.navigate('missing-persons');
     }
 
-    renderReportFound() {
-        const section = document.createElement('section');
-        section.innerHTML = `
-            <div class="container">
-                <h2>Report Found Person</h2>
-                <div class="card" style="max-width: 600px; margin: 2rem auto;">
-                    <form id="found-form" onsubmit="app.submitFoundReport(event)">
-                        <div class="form-group">
-                            <label>Description *</label>
-                            <textarea name="description" required></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>Current Location *</label>
-                            <input type="text" name="currentLocation" required>
-                        </div>
-                        <div class="form-group">
-                            <label>State *</label>
-                            <select name="state" required>
-                                <option value="">Select State</option>
-                                <option value="Lagos">Lagos</option>
-                                <option value="Ogun">Ogun</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Photo</label>
-                            <input type="file" name="photo" accept="image/*">
-                        </div>
-                        <div class="form-group">
-                            <label>Your Contact Information</label>
-                            <input type="tel" name="phoneNumber" placeholder="Your phone number">
-                        </div>
-                        <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Report</button>
-                    </form>
-                </div>
-            </div>
-        `;
-        return section;
-    }
-
-    async submitFoundReport(event) {
-        event.preventDefault();
-        const form = event.target;
-        const formData = new FormData(form);
-        
-        try {
-            const response = await fetch(`${this.apiBase}/foundPerson.create`, {
-                method: 'POST',
-                body: JSON.stringify({
-                    description: formData.get('description'),
-                    currentLocation: formData.get('currentLocation'),
-                    state: formData.get('state'),
-                    photoUrl: null,
-                    reporterContact: formData.get('phoneNumber')
-                }),
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (response.ok) {
-                alert('Found person report submitted successfully!');
-                this.navigate('found-persons');
-            } else {
-                alert('Error submitting report');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Error submitting report');
-        }
-    }
-
-    async renderMissingPersons() {
+    renderMissingPersons() {
         const section = document.createElement('section');
         section.innerHTML = `
             <div class="container">
@@ -370,7 +236,7 @@ class FindOurOwnApp {
                 <div class="card" style="max-width: 400px; margin: 2rem auto;">
                     <div class="form-group">
                         <label>Filter by State</label>
-                        <select id="state-filter" onchange="app.filterGallery()">
+                        <select id="state-filter" onchange="app.filterGallery(this.value)">
                             <option value="">All States</option>
                             <option value="Lagos">Lagos</option>
                             <option value="Ogun">Ogun</option>
@@ -380,49 +246,38 @@ class FindOurOwnApp {
                 <div id="gallery" class="gallery"></div>
             </div>
         `;
-        
-        // Load data
-        await this.loadMissingPersons();
-        
+        setTimeout(() => this.filterGallery(''), 0);
         return section;
     }
 
-    async loadMissingPersons() {
-        try {
-            const response = await fetch(`${this.apiBase}/missingPerson.listApproved?input={}`);
-            const data = await response.json();
-            
-            if (data.result && data.result.data) {
-                const gallery = document.getElementById('gallery');
-                gallery.innerHTML = '';
-                
-                data.result.data.forEach(person => {
-                    const card = document.createElement('div');
-                    card.className = 'gallery-item';
-                    card.innerHTML = `
-                        <div style="background-color: #ddd; height: 200px; display: flex; align-items: center; justify-content: center; color: #999;">
-                            No Photo
-                        </div>
-                        <div class="gallery-content">
-                            <h3 class="gallery-title">${person.name}</h3>
-                            <div class="gallery-meta">
-                                Age: ${person.age} | ${person.gender} | ${person.state}
-                            </div>
-                            <p class="gallery-description">${person.description}</p>
-                            <p style="font-size: 0.85rem; color: #666;">Last seen: ${person.lastSeenLocation}</p>
-                            ${person.showPhonePublicly ? `<p style="font-weight: 600; color: var(--accent);">📞 ${person.phoneNumber}</p>` : ''}
-                            <button class="btn btn-accent" style="width: 100%; margin-top: 1rem;">Contact Reporter</button>
-                        </div>
-                    `;
-                    gallery.appendChild(card);
-                });
-            }
-        } catch (error) {
-            console.error('Error loading missing persons:', error);
-        }
+    filterGallery(state) {
+        const gallery = document.getElementById('gallery');
+        if (!gallery) return;
+        gallery.innerHTML = '';
+        
+        const filtered = state ? this.dummyMissing.filter(p => p.state === state) : this.dummyMissing;
+        
+        filtered.forEach(person => {
+            const card = document.createElement('div');
+            card.className = 'gallery-item';
+            card.innerHTML = `
+                <div style="background-color: #f0f0f0; height: 200px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 3rem;">👤</div>
+                <div class="gallery-content">
+                    <h3 class="gallery-title">${person.name}</h3>
+                    <div class="gallery-meta">
+                        Age: ${person.age} | ${person.gender} | ${person.state}
+                    </div>
+                    <p class="gallery-description">${person.description}</p>
+                    <p style="font-size: 0.85rem; color: #666; margin-top: 0.5rem;"><strong>Last seen:</strong> ${person.lastSeenLocation}</p>
+                    ${person.showPhonePublicly ? `<p style="font-weight: 600; color: #e74c3c; margin-top: 0.5rem;">📞 ${person.phoneNumber}</p>` : ''}
+                    <button class="btn btn-accent" style="width: 100%; margin-top: 1rem;" onclick="alert('Contacting reporter for ${person.name}...')">Contact Reporter</button>
+                </div>
+            `;
+            gallery.appendChild(card);
+        });
     }
 
-    async renderFoundPersons() {
+    renderFoundPersons() {
         const section = document.createElement('section');
         section.innerHTML = `
             <div class="container">
@@ -430,7 +285,7 @@ class FindOurOwnApp {
                 <div class="card" style="max-width: 400px; margin: 2rem auto;">
                     <div class="form-group">
                         <label>Filter by State</label>
-                        <select id="state-filter" onchange="app.filterFoundGallery()">
+                        <select onchange="app.filterFoundGallery(this.value)">
                             <option value="">All States</option>
                             <option value="Lagos">Lagos</option>
                             <option value="Ogun">Ogun</option>
@@ -440,42 +295,32 @@ class FindOurOwnApp {
                 <div id="found-gallery" class="gallery"></div>
             </div>
         `;
-        
-        // Load data
-        await this.loadFoundPersons();
-        
+        setTimeout(() => this.filterFoundGallery(''), 0);
         return section;
     }
 
-    async loadFoundPersons() {
-        try {
-            const response = await fetch(`${this.apiBase}/foundPerson.listApproved?input={}`);
-            const data = await response.json();
-            
-            if (data.result && data.result.data) {
-                const gallery = document.getElementById('found-gallery');
-                gallery.innerHTML = '';
-                
-                data.result.data.forEach(person => {
-                    const card = document.createElement('div');
-                    card.className = 'gallery-item';
-                    card.innerHTML = `
-                        <div style="background-color: #ddd; height: 200px; display: flex; align-items: center; justify-content: center; color: #999;">
-                            No Photo
-                        </div>
-                        <div class="gallery-content">
-                            <h3 class="gallery-title">Unidentified Person</h3>
-                            <p class="gallery-description">${person.description}</p>
-                            <p style="font-size: 0.85rem; color: #666;">Location: ${person.currentLocation}</p>
-                            <button class="btn btn-accent" style="width: 100%; margin-top: 1rem;">Report Match</button>
-                        </div>
-                    `;
-                    gallery.appendChild(card);
-                });
-            }
-        } catch (error) {
-            console.error('Error loading found persons:', error);
-        }
+    filterFoundGallery(state) {
+        const gallery = document.getElementById('found-gallery');
+        if (!gallery) return;
+        gallery.innerHTML = '';
+        
+        const filtered = state ? this.dummyFound.filter(p => p.state === state) : this.dummyFound;
+        
+        filtered.forEach(person => {
+            const card = document.createElement('div');
+            card.className = 'gallery-item';
+            card.innerHTML = `
+                <div style="background-color: #e8f4fd; height: 200px; display: flex; align-items: center; justify-content: center; color: #3498db; font-size: 3rem;">🔍</div>
+                <div class="gallery-content">
+                    <h3 class="gallery-title">Unidentified Person</h3>
+                    <div class="gallery-meta">${person.state}</div>
+                    <p class="gallery-description">${person.description}</p>
+                    <p style="font-size: 0.85rem; color: #666; margin-top: 0.5rem;"><strong>Current Location:</strong> ${person.currentLocation}</p>
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="alert('Thank you. We will notify the authorities.')">This might be my relative</button>
+                </div>
+            `;
+            gallery.appendChild(card);
+        });
     }
 
     renderDashboard() {
@@ -483,182 +328,33 @@ class FindOurOwnApp {
         section.innerHTML = `
             <div class="container">
                 <h2>My Dashboard</h2>
-                <div class="card" style="max-width: 600px; margin: 2rem auto;">
-                    <h3>Your Reports</h3>
-                    <div id="user-reports" style="margin-top: 1rem;"></div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-top: 2rem;">
+                    <div class="card">
+                        <h3>Welcome, ${this.user.name}</h3>
+                        <p>You have submitted ${this.dummyMissing.length} reports.</p>
+                        <button class="btn btn-primary" style="margin-top: 1rem;" onclick="app.navigate('report-missing')">Create New Report</button>
+                    </div>
+                    <div class="card">
+                        <h3>Quick Stats</h3>
+                        <p>Active Reports: ${this.dummyMissing.length}</p>
+                        <p>Pending Review: 0</p>
+                        <p>Matches Found: 2</p>
+                    </div>
                 </div>
             </div>
         `;
-        
-        this.loadUserReports();
-        
         return section;
-    }
-
-    async loadUserReports() {
-        try {
-            const response = await fetch(`${this.apiBase}/missingPerson.getUserReports?input={}`);
-            const data = await response.json();
-            
-            if (data.result && data.result.data) {
-                const container = document.getElementById('user-reports');
-                container.innerHTML = '';
-                
-                data.result.data.forEach(report => {
-                    const item = document.createElement('div');
-                    item.className = 'card';
-                    item.style.marginBottom = '1rem';
-                    item.innerHTML = `
-                        <h4>${report.name}</h4>
-                        <p>Status: ${report.status}</p>
-                        <button class="btn btn-secondary" style="margin-right: 0.5rem;">Edit</button>
-                        <button class="btn btn-accent">Delete</button>
-                    `;
-                    container.appendChild(item);
-                });
-            }
-        } catch (error) {
-            console.error('Error loading user reports:', error);
-        }
-    }
-
-    renderAdmin() {
-        const section = document.createElement('section');
-        section.innerHTML = `
-            <div class="container">
-                <h2>Admin Dashboard</h2>
-                <div class="card">
-                    <h3>Pending Reports</h3>
-                    <div id="pending-reports" style="margin-top: 1rem;"></div>
-                </div>
-            </div>
-        `;
-        
-        this.loadPendingReports();
-        
-        return section;
-    }
-
-    async loadPendingReports() {
-        try {
-            const response = await fetch(`${this.apiBase}/admin.getPendingReports?input={}`);
-            const data = await response.json();
-            
-            if (data.result && data.result.data) {
-                const container = document.getElementById('pending-reports');
-                container.innerHTML = '';
-                
-                data.result.data.forEach(report => {
-                    const item = document.createElement('div');
-                    item.className = 'card';
-                    item.style.marginBottom = '1rem';
-                    item.innerHTML = `
-                        <h4>${report.name}</h4>
-                        <p>${report.description}</p>
-                        <button class="btn btn-primary" onclick="app.approveReport(${report.id})">Approve</button>
-                        <button class="btn btn-accent" onclick="app.rejectReport(${report.id})">Reject</button>
-                    `;
-                    container.appendChild(item);
-                });
-            }
-        } catch (error) {
-            console.error('Error loading pending reports:', error);
-        }
-    }
-
-    async approveReport(id) {
-        try {
-            const response = await fetch(`${this.apiBase}/admin.approveReport`, {
-                method: 'POST',
-                body: JSON.stringify({ reportId: id }),
-                headers: { 'Content-Type': 'application/json' }
-            });
-            
-            if (response.ok) {
-                alert('Report approved!');
-                this.loadPendingReports();
-            }
-        } catch (error) {
-            console.error('Error:', error);
-        }
-    }
-
-    async rejectReport(id) {
-        try {
-            const response = await fetch(`${this.apiBase}/admin.rejectReport`, {
-                method: 'POST',
-                body: JSON.stringify({ reportId: id }),
-                headers: { 'Content-Type': 'application/json' }
-            });
-            
-            if (response.ok) {
-                alert('Report rejected!');
-                this.loadPendingReports();
-            }
-        } catch (error) {
-            console.error('Error:', error);
-        }
     }
 
     renderMessages() {
         const section = document.createElement('section');
-        section.innerHTML = `
-            <div class="container">
-                <h2>Messages</h2>
-                <div class="card">
-                    <h3>Your Conversations</h3>
-                    <div id="conversations" style="margin-top: 1rem;"></div>
-                </div>
-            </div>
-        `;
-        
-        this.loadConversations();
-        
+        section.innerHTML = `<div class="container"><h2>Messages</h2><p>No new messages.</p></div>`;
         return section;
     }
 
-    async loadConversations() {
-        try {
-            const response = await fetch(`${this.apiBase}/message.getConversations?input={}`);
-            const data = await response.json();
-            
-            if (data.result && data.result.data) {
-                const container = document.getElementById('conversations');
-                container.innerHTML = '';
-                
-                data.result.data.forEach(conv => {
-                    const item = document.createElement('div');
-                    item.className = 'card';
-                    item.style.marginBottom = '1rem';
-                    item.innerHTML = `
-                        <h4>Conversation ${conv.id}</h4>
-                        <p>${conv.lastMessage}</p>
-                        <button class="btn btn-primary">View</button>
-                    `;
-                    container.appendChild(item);
-                });
-            }
-        } catch (error) {
-            console.error('Error loading conversations:', error);
-        }
-    }
-
-    filterGallery() {
-        // Implement filtering logic
-    }
-
-    filterFoundGallery() {
-        // Implement filtering logic
-    }
-
-    async logout() {
-        try {
-            await fetch(`${this.apiBase}/auth.logout`, { method: 'POST' });
-            this.user = null;
-            this.navigate('home');
-        } catch (error) {
-            console.error('Error logging out:', error);
-        }
+    logout() {
+        this.user = null;
+        this.navigate('home');
     }
 
     createFooter() {
@@ -680,9 +376,8 @@ class FindOurOwnApp {
                 <div>
                     <h3>Support</h3>
                     <ul>
-                        <li><a href="#">Contact Us</a></li>
-                        <li><a href="#">Privacy Policy</a></li>
-                        <li><a href="#">Terms of Service</a></li>
+                        <li><a href="#" onclick="alert('Contact: support@findourown.org'); return false;">Contact Us</a></li>
+                        <li><a href="#" onclick="return false;">Privacy Policy</a></li>
                     </ul>
                 </div>
             </div>
@@ -694,5 +389,4 @@ class FindOurOwnApp {
     }
 }
 
-// Initialize app
 const app = new FindOurOwnApp();
