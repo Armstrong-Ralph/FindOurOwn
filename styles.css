@@ -52,14 +52,36 @@ nav {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 1000;
 }
 
 nav .container {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
+}
+
+.nav-links {
+    display: flex;
+    list-style: none;
+    gap: 2rem;
+    align-items: center;
+}
+
+.mobile-toggle {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    padding: 10px;
+}
+
+.mobile-toggle span {
+    width: 25px;
+    height: 3px;
+    background-color: var(--primary);
+    border-radius: 2px;
+    transition: 0.3s;
 }
 
 .logo {
@@ -270,6 +292,26 @@ textarea {
     color: var(--accent);
 }
 
+/* Alerts */
+.alert {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+    text-align: center;
+    font-weight: 600;
+}
+
+.alert.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+/* Identified State */
+.gallery-item.identified {
+    border: 2px solid #28a745;
+}
+
 /* Stats */
 .stats {
     display: grid;
@@ -430,21 +472,41 @@ footer a:hover {
     }
     
     /* Navigation */
-    nav .container {
-        flex-wrap: wrap;
-        gap: 1rem;
+    .mobile-toggle {
+        display: flex;
     }
-    
-    nav ul {
-        gap: 0.5rem;
-        flex-wrap: wrap;
+
+    .nav-links {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: var(--bg-white);
+        flex-direction: column;
+        padding: 1rem;
+        gap: 0;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border-top: 1px solid var(--border-color);
+    }
+
+    .nav-links.active {
+        display: flex;
+    }
+
+    .nav-links li {
         width: 100%;
-        order: 3;
     }
-    
-    nav a {
-        font-size: 0.85rem;
-        padding: 0.5rem 0.75rem;
+
+    .nav-links a {
+        width: 100%;
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .nav-links .btn {
+        margin-top: 1rem;
+        width: 100%;
     }
     
     /* Hero */
