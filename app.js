@@ -195,11 +195,11 @@ class FindOurOwnApp {
                     <form onsubmit="app.handleLogin(event)">
                         <div class="form-group">
                             <label>Email</label>
-                            <input type="email" name="email" required placeholder="admin@findourown.org">
+                            <input type="email" name="email" required>
                         </div>
                         <div class="form-group">
                             <label>Password</label>
-                            <input type="password" name="password" required placeholder="password123">
+                            <input type="password" name="password" required>
                         </div>
                         <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
                     </form>
