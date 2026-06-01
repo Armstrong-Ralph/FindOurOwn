@@ -1,4 +1,4 @@
-// FindOurOwn - Vanilla JavaScript App with Admin Dashboard, WhatsApp, and Session Storage
+// FindOurOwn - Vanilla JavaScript App with Admin Auto-Approval and Report Found Form
 class FindOurOwnApp {
     constructor() {
         this.currentPage = 'home';
@@ -23,9 +23,9 @@ class FindOurOwnApp {
         const savedPending = localStorage.getItem('findourown_pending');
 
         this.dummyMissing = savedMissing ? JSON.parse(savedMissing) : [
-            { id: 1, name: 'Chidi Okafor', age: 12, gender: 'Male', state: 'Lagos', lastSeenLocation: 'Ikeja Along', description: 'Last seen wearing a blue school uniform. Height approx 4ft 5in.', phoneNumber: '2348012345678', showPhonePublicly: true },
-            { id: 2, name: 'Amina Bello', age: 24, gender: 'Female', state: 'Ogun', lastSeenLocation: 'Mowe Bus Stop', description: 'Fair complexion, wearing a green hijab and black dress.', phoneNumber: '2348123456789', showPhonePublicly: false },
-            { id: 3, name: 'Oluwaseun Adeyemi', age: 8, gender: 'Male', state: 'Lagos', lastSeenLocation: 'Lekki Phase 1', description: 'Short hair, birthmark on left arm. Wearing a red t-shirt.', phoneNumber: '2347034567890', showPhonePublicly: true }
+            { id: 1, name: 'Chidi Okafor', age: 12, gender: 'Male', state: 'Lagos', lastSeenLocation: 'Ikeja Along', description: 'Last seen wearing a blue school uniform. Height approx 4ft 5in.', phoneNumber: '2348012345678' },
+            { id: 2, name: 'Amina Bello', age: 24, gender: 'Female', state: 'Ogun', lastSeenLocation: 'Mowe Bus Stop', description: 'Fair complexion, wearing a green hijab and black dress.', phoneNumber: '2348123456789' },
+            { id: 3, name: 'Oluwaseun Adeyemi', age: 8, gender: 'Male', state: 'Lagos', lastSeenLocation: 'Lekki Phase 1', description: 'Short hair, birthmark on left arm. Wearing a red t-shirt.', phoneNumber: '2347034567890' }
         ];
 
         this.dummyFound = savedFound ? JSON.parse(savedFound) : [
@@ -95,7 +95,6 @@ class FindOurOwnApp {
     render() {
         const app = document.getElementById('app');
         app.innerHTML = '';
-        
         app.appendChild(this.createNav());
         
         let content;
@@ -162,24 +161,15 @@ class FindOurOwnApp {
             <div class="container">
                 ${this.logoutMessage ? `<div class="alert success">You have been logged out successfully.</div>` : ''}
                 <h1>FindOurOwn</h1>
-                <p>A trusted platform dedicated to reuniting missing persons with their families across Lagos and Ogun States.</p>
+                <p>Reuniting missing persons with their families across Lagos and Ogun States.</p>
                 <div class="hero-buttons">
                     <button class="btn btn-primary" onclick="app.navigate('report-missing')">Report Missing Person</button>
-                    <button class="btn btn-secondary" onclick="app.navigate('found-persons')">Browse Found Persons</button>
+                    <button class="btn btn-secondary" onclick="app.navigate('report-found')">Report Found Person</button>
                 </div>
                 <div class="stats">
-                    <div class="stat">
-                        <div class="stat-number">${this.dummyMissing.length}</div>
-                        <div class="stat-label">Active Reports</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-number">124</div>
-                        <div class="stat-label">Volunteers Helping</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-number">2</div>
-                        <div class="stat-label">States Covered</div>
-                    </div>
+                    <div class="stat"><div class="stat-number">${this.dummyMissing.length}</div><div class="stat-label">Active Reports</div></div>
+                    <div class="stat"><div class="stat-number">124</div><div class="stat-label">Volunteers</div></div>
+                    <div class="stat"><div class="stat-number">2</div><div class="stat-label">States</div></div>
                 </div>
             </div>
         `;
@@ -193,14 +183,8 @@ class FindOurOwnApp {
                 <div class="card" style="max-width: 400px; margin: 2rem auto;">
                     <h2 style="text-align: center; margin-bottom: 1.5rem;">Login</h2>
                     <form onsubmit="app.handleLogin(event)">
-                        <div class="form-group">
-                            <label>Email</label>
-                            <input type="email" name="email" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Password</label>
-                            <input type="password" name="password" required>
-                        </div>
+                        <div class="form-group"><label>Email</label><input type="email" name="email" required></div>
+                        <div class="form-group"><label>Password</label><input type="password" name="password" required></div>
                         <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
                     </form>
                 </div>
@@ -234,15 +218,15 @@ class FindOurOwnApp {
             <div class="container">
                 <h2>Report Missing Person</h2>
                 <div class="card" style="max-width: 600px; margin: 2rem auto;">
-                    <form onsubmit="app.submitReport(event)">
+                    <form onsubmit="app.submitReport(event, 'missing')">
                         <div class="form-group"><label>Full Name *</label><input type="text" name="name" required></div>
                         <div class="form-group"><label>Age *</label><input type="number" name="age" required></div>
                         <div class="form-group"><label>Gender *</label><select name="gender" required><option value="Male">Male</option><option value="Female">Female</option></select></div>
                         <div class="form-group"><label>State *</label><select name="state" required><option value="Lagos">Lagos</option><option value="Ogun">Ogun</option></select></div>
                         <div class="form-group"><label>Last Seen Location *</label><input type="text" name="lastSeenLocation" required></div>
                         <div class="form-group"><label>Description *</label><textarea name="description" required></textarea></div>
-                        <div class="form-group"><label>Your WhatsApp Number (with country code, e.g. 23480...) *</label><input type="tel" name="phoneNumber" required></div>
-                        <button type="submit" class="btn btn-primary" style="width: 100%;">Submit for Approval</button>
+                        <div class="form-group"><label>Your WhatsApp Number (e.g. 23480...) *</label><input type="tel" name="phoneNumber" required></div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">${this.user?.role === 'admin' ? 'Publish Immediately' : 'Submit for Approval'}</button>
                     </form>
                 </div>
             </div>
@@ -250,26 +234,54 @@ class FindOurOwnApp {
         return section;
     }
 
-    submitReport(event) {
+    renderReportFound() {
+        const section = document.createElement('section');
+        section.innerHTML = `
+            <div class="container">
+                <h2>Report Found Person</h2>
+                <div class="card" style="max-width: 600px; margin: 2rem auto;">
+                    <form onsubmit="app.submitReport(event, 'found')">
+                        <div class="form-group"><label>Description of Person Found *</label><textarea name="description" required placeholder="Describe appearance, clothes, etc."></textarea></div>
+                        <div class="form-group"><label>Current Location *</label><input type="text" name="currentLocation" required placeholder="Where is the person now?"></div>
+                        <div class="form-group"><label>State *</label><select name="state" required><option value="Lagos">Lagos</option><option value="Ogun">Ogun</option></select></div>
+                        <div class="form-group"><label>Your WhatsApp Number (e.g. 23480...) *</label><input type="tel" name="phoneNumber" required></div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">${this.user?.role === 'admin' ? 'Publish Immediately' : 'Submit for Approval'}</button>
+                    </form>
+                </div>
+            </div>
+        `;
+        return section;
+    }
+
+    submitReport(event, type) {
         event.preventDefault();
         const formData = new FormData(event.target);
         const report = {
             id: Date.now(),
-            type: 'missing',
-            name: formData.get('name'),
-            age: formData.get('age'),
-            gender: formData.get('gender'),
+            type: type,
+            name: formData.get('name') || 'Unidentified Person',
+            age: formData.get('age') || 'Unknown',
+            gender: formData.get('gender') || 'Unknown',
             state: formData.get('state'),
             lastSeenLocation: formData.get('lastSeenLocation'),
+            currentLocation: formData.get('currentLocation'),
             description: formData.get('description'),
             phoneNumber: formData.get('phoneNumber'),
-            showPhonePublicly: true,
-            status: 'pending'
+            reporterPhone: formData.get('phoneNumber'),
+            identified: false
         };
-        this.pendingReports.push(report);
+
+        if (this.user?.role === 'admin') {
+            if (type === 'missing') this.dummyMissing.unshift(report);
+            else this.dummyFound.unshift(report);
+            alert('Report published immediately!');
+        } else {
+            this.pendingReports.push(report);
+            alert('Report submitted! It will appear once an admin approves it.');
+        }
+        
         this.saveData();
-        alert('Report submitted! It will appear once an admin approves it.');
-        this.navigate('home');
+        this.navigate(type === 'missing' ? 'missing-persons' : 'found-persons');
     }
 
     renderMissingPersons() {
@@ -286,7 +298,7 @@ class FindOurOwnApp {
                         <h3 class="gallery-title">${person.name}</h3>
                         <div class="gallery-meta">Age: ${person.age} | ${person.state}</div>
                         <p class="gallery-description">${person.description}</p>
-                        <button class="btn btn-accent" style="width: 100%;" onclick="app.openWhatsApp('${person.phoneNumber}', 'Hello, I have information regarding ${person.name}')">Contact via WhatsApp</button>
+                        <button class="btn btn-accent" style="width: 100%;" onclick="app.openWhatsApp('${person.phoneNumber}', 'Hello, I have info regarding ${person.name}')">Contact via WhatsApp</button>
                     </div>
                 `;
                 gallery.appendChild(card);
@@ -308,7 +320,8 @@ class FindOurOwnApp {
                     <div class="gallery-content">
                         <h3 class="gallery-title">${person.identified ? 'Identified: ' + person.identifiedName : 'Unidentified Person'}</h3>
                         <p class="gallery-description">${person.description}</p>
-                        <button class="btn btn-primary" style="width: 100%;" onclick="app.openWhatsApp('${person.reporterPhone}', 'Hello, I think I know the unidentified person found at ${person.currentLocation}')">Contact Finder</button>
+                        <p style="font-size: 0.85rem; color: #666;"><strong>Location:</strong> ${person.currentLocation}</p>
+                        <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="app.openWhatsApp('${person.reporterPhone}', 'Hello, I think I know the person found at ${person.currentLocation}')">Contact Finder</button>
                     </div>
                 `;
                 gallery.appendChild(card);
@@ -318,34 +331,18 @@ class FindOurOwnApp {
     }
 
     openWhatsApp(phone, message) {
-        const url = `https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-        window.open(url, '_blank');
+        window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
     }
 
     renderAdmin() {
         const section = document.createElement('section');
-        section.innerHTML = `
-            <div class="container">
-                <h2>Admin Dashboard - Pending Approvals</h2>
-                <div id="pending-list" style="margin-top: 2rem;">
-                    ${this.pendingReports.length === 0 ? '<p>No pending reports.</p>' : ''}
-                </div>
-            </div>
-        `;
+        section.innerHTML = `<div class="container"><h2>Admin Dashboard</h2><div id="pending-list" style="margin-top: 2rem;">${this.pendingReports.length === 0 ? '<p>No pending reports.</p>' : ''}</div></div>`;
         setTimeout(() => {
             const list = document.getElementById('pending-list');
             this.pendingReports.forEach((report, index) => {
                 const card = document.createElement('div');
-                card.className = 'card';
-                card.style.marginBottom = '1rem';
-                card.innerHTML = `
-                    <h3>${report.name} (${report.type})</h3>
-                    <p>${report.description}</p>
-                    <div style="margin-top: 1rem; display: flex; gap: 1rem;">
-                        <button class="btn btn-primary" onclick="app.approveReport(${index})">Approve</button>
-                        <button class="btn btn-accent" onclick="app.rejectReport(${index})">Reject</button>
-                    </div>
-                `;
+                card.className = 'card'; card.style.marginBottom = '1rem';
+                card.innerHTML = `<h3>${report.name} (${report.type})</h3><p>${report.description}</p><div style="margin-top: 1rem; display: flex; gap: 1rem;"><button class="btn btn-primary" onclick="app.approveReport(${index})">Approve</button><button class="btn btn-accent" onclick="app.rejectReport(${index})">Reject</button></div>`;
                 list.appendChild(card);
             });
         }, 0);
@@ -354,34 +351,14 @@ class FindOurOwnApp {
 
     approveReport(index) {
         const report = this.pendingReports.splice(index, 1)[0];
-        if (report.type === 'missing') {
-            this.dummyMissing.unshift(report);
-        } else {
-            this.dummyFound.unshift(report);
-        }
-        this.saveData();
-        alert('Report approved and added to gallery!');
-        this.render();
-    }
-
-    rejectReport(index) {
-        this.pendingReports.splice(index, 1);
-        this.saveData();
-        alert('Report rejected.');
-        this.render();
+        if (report.type === 'missing') this.dummyMissing.unshift(report);
+        else this.dummyFound.unshift(report);
+        this.saveData(); this.render();
     }
 
     renderDashboard() {
         const section = document.createElement('section');
-        section.innerHTML = `
-            <div class="container">
-                <h2>Welcome, ${this.user.name}</h2>
-                <div class="card" style="margin-top: 2rem;">
-                    <h3>Quick Actions</h3>
-                    <button class="btn btn-primary" onclick="app.navigate('report-missing')" style="margin-top: 1rem;">New Missing Report</button>
-                </div>
-            </div>
-        `;
+        section.innerHTML = `<div class="container"><h2>Welcome, ${this.user.name}</h2><div class="card" style="margin-top: 2rem;"><h3>Quick Actions</h3><button class="btn btn-primary" onclick="app.navigate('report-missing')" style="margin-top: 1rem;">Report Missing</button><button class="btn btn-secondary" onclick="app.navigate('report-found')" style="margin-top: 1rem; margin-left: 1rem;">Report Found</button></div></div>`;
         return section;
     }
 
