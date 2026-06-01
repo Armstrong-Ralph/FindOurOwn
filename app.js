@@ -358,7 +358,18 @@ class FindOurOwnApp {
 
     renderDashboard() {
         const section = document.createElement('section');
-        section.innerHTML = `<div class="container"><h2>Welcome, ${this.user.name}</h2><div class="card" style="margin-top: 2rem;"><h3>Quick Actions</h3><button class="btn btn-primary" onclick="app.navigate('report-missing')" style="margin-top: 1rem;">Report Missing</button><button class="btn btn-secondary" onclick="app.navigate('report-found')" style="margin-top: 1rem; margin-left: 1rem;">Report Found</button></div></div>`;
+        section.innerHTML = `
+            <div class="container">
+                <h2>Welcome, ${this.user.name}</h2>
+                <div class="card" style="margin-top: 2rem; max-width: 500px; margin-left: auto; margin-right: auto;">
+                    <h3 style="margin-bottom: 1.5rem;">Quick Actions</h3>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <button class="btn btn-primary" onclick="app.navigate('report-missing')" style="width: 100%;">Report Missing</button>
+                        <button class="btn btn-secondary" onclick="app.navigate('report-found')" style="width: 100%;">Report Found</button>
+                    </div>
+                </div>
+            </div>
+        `;
         return section;
     }
 
