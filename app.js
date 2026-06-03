@@ -1,4 +1,4 @@
-// FindOurOwn - Vanilla JavaScript App with Admin Auto-Approval and Report Found Form
+// FindOurOwn - Vanilla JavaScript App with Volunteer Feature
 class FindOurOwnApp {
     constructor() {
         this.currentPage = 'home';
@@ -6,13 +6,11 @@ class FindOurOwnApp {
         this.mobileMenuOpen = false;
         this.logoutMessage = false;
         
-        // Mock Accounts
         this.accounts = [
             { email: 'admin@findourown.org', password: 'password123', name: 'Admin User', role: 'admin' },
             { email: 'user@findourown.org', password: 'password123', name: 'John Doe', role: 'user' }
         ];
 
-        // Initialize Data from LocalStorage or Defaults
         this.initData();
         this.init();
     }
@@ -21,26 +19,26 @@ class FindOurOwnApp {
         const savedMissing = localStorage.getItem('findourown_missing');
         const savedFound = localStorage.getItem('findourown_found');
         const savedPending = localStorage.getItem('findourown_pending');
+        const savedVolunteers = localStorage.getItem('findourown_volunteers');
 
         this.dummyMissing = savedMissing ? JSON.parse(savedMissing) : [
-            { id: 1, name: 'Chidi Okafor', age: 12, gender: 'Male', state: 'Lagos', lastSeenLocation: 'Ikeja Along', description: 'Last seen wearing a blue school uniform. Height approx 4ft 5in.', phoneNumber: '2348012345678' },
-            { id: 2, name: 'Amina Bello', age: 24, gender: 'Female', state: 'Ogun', lastSeenLocation: 'Mowe Bus Stop', description: 'Fair complexion, wearing a green hijab and black dress.', phoneNumber: '2348123456789' },
-            { id: 3, name: 'Oluwaseun Adeyemi', age: 8, gender: 'Male', state: 'Lagos', lastSeenLocation: 'Lekki Phase 1', description: 'Short hair, birthmark on left arm. Wearing a red t-shirt.', phoneNumber: '2347034567890' }
+            { id: 1, name: 'Chidi Okafor', age: 12, gender: 'Male', state: 'Lagos', lastSeenLocation: 'Ikeja Along', description: 'Last seen wearing a blue school uniform.', phoneNumber: '2348012345678' },
+            { id: 2, name: 'Amina Bello', age: 24, gender: 'Female', state: 'Ogun', lastSeenLocation: 'Mowe Bus Stop', description: 'Fair complexion, wearing a green hijab.', phoneNumber: '2348123456789' }
         ];
 
         this.dummyFound = savedFound ? JSON.parse(savedFound) : [
-            { id: 101, description: 'Young boy found wandering near Ojota. Wearing a yellow shirt.', currentLocation: 'Ojota Police Station', state: 'Lagos', identified: false, reporterPhone: '2348011112222' },
-            { id: 102, description: 'Elderly woman found in Abeokuta. Wearing a floral wrapper.', currentLocation: 'St. Peters Hospital', state: 'Ogun', identified: false, reporterPhone: '2348033334444' },
-            { id: 103, description: 'Toddler found at a park in Surulere.', currentLocation: 'Community Center, Surulere', state: 'Lagos', identified: true, identifiedName: 'Emeka Junior', reporterPhone: '2348055556666' }
+            { id: 101, description: 'Young boy found near Ojota.', currentLocation: 'Ojota Police Station', state: 'Lagos', identified: false, reporterPhone: '2348011112222' }
         ];
 
         this.pendingReports = savedPending ? JSON.parse(savedPending) : [];
+        this.volunteers = savedVolunteers ? JSON.parse(savedVolunteers) : [];
     }
 
     saveData() {
         localStorage.setItem('findourown_missing', JSON.stringify(this.dummyMissing));
         localStorage.setItem('findourown_found', JSON.stringify(this.dummyFound));
         localStorage.setItem('findourown_pending', JSON.stringify(this.pendingReports));
+        localStorage.setItem('findourown_volunteers', JSON.stringify(this.volunteers));
     }
 
     async init() {
@@ -107,6 +105,7 @@ class FindOurOwnApp {
             case 'found-persons': content = this.renderFoundPersons(); break;
             case 'dashboard': content = this.renderDashboard(); break;
             case 'admin': content = this.renderAdmin(); break;
+            case 'volunteer': content = this.renderVolunteer(); break;
             default: content = this.renderHome();
         }
         
@@ -145,9 +144,7 @@ class FindOurOwnApp {
                     }
                 </ul>
                 <div class="mobile-toggle" onclick="app.toggleMobileMenu()">
-                    <span></span>
-                    <span></span>
-                    <span></span>
+                    <span></span><span></span><span></span>
                 </div>
             </div>
         `;
@@ -162,18 +159,55 @@ class FindOurOwnApp {
                 ${this.logoutMessage ? `<div class="alert success">You have been logged out successfully.</div>` : ''}
                 <h1>FindOurOwn</h1>
                 <p>Reuniting missing persons with their families across Lagos and Ogun States.</p>
-                <div class="hero-buttons">
-                    <button class="btn btn-primary" onclick="app.navigate('report-missing')">Report Missing Person</button>
-                    <button class="btn btn-secondary" onclick="app.navigate('report-found')">Report Found Person</button>
+                <div class="hero-buttons" style="flex-direction: column; max-width: 300px; margin: 0 auto;">
+                    <button class="btn btn-primary" onclick="app.navigate('report-missing')" style="width: 100%;">Report Missing Person</button>
+                    <button class="btn btn-secondary" onclick="app.navigate('report-found')" style="width: 100%; margin-top: 1rem;">Report Found Person</button>
+                    <button class="btn btn-accent" onclick="app.navigate('volunteer')" style="width: 100%; margin-top: 1rem;">Join as Volunteer</button>
                 </div>
                 <div class="stats">
                     <div class="stat"><div class="stat-number">${this.dummyMissing.length}</div><div class="stat-label">Active Reports</div></div>
-                    <div class="stat"><div class="stat-number">124</div><div class="stat-label">Volunteers</div></div>
+                    <div class="stat"><div class="stat-number">${124 + this.volunteers.length}</div><div class="stat-label">Volunteers</div></div>
                     <div class="stat"><div class="stat-number">2</div><div class="stat-label">States</div></div>
                 </div>
             </div>
         `;
         return section;
+    }
+
+    renderVolunteer() {
+        const section = document.createElement('section');
+        section.innerHTML = `
+            <div class="container">
+                <h2>Become a Volunteer</h2>
+                <div class="card" style="max-width: 500px; margin: 2rem auto;">
+                    <form onsubmit="app.submitVolunteer(event)">
+                        <div class="form-group"><label>Full Name *</label><input type="text" name="name" required></div>
+                        <div class="form-group"><label>Email *</label><input type="email" name="email" required></div>
+                        <div class="form-group"><label>WhatsApp Number *</label><input type="tel" name="phone" required></div>
+                        <div class="form-group"><label>State *</label><select name="state" required><option value="Lagos">Lagos</option><option value="Ogun">Ogun</option></select></div>
+                        <div class="form-group"><label>Why do you want to help? *</label><textarea name="reason" required></textarea></div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Sign Up to Help</button>
+                    </form>
+                </div>
+            </div>
+        `;
+        return section;
+    }
+
+    submitVolunteer(event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        this.volunteers.push({
+            id: Date.now(),
+            name: formData.get('name'),
+            email: formData.get('email'),
+            phone: formData.get('phone'),
+            state: formData.get('state'),
+            reason: formData.get('reason')
+        });
+        this.saveData();
+        alert('Thank you for volunteering! We will contact you soon.');
+        this.navigate('home');
     }
 
     renderLogin() {
@@ -225,7 +259,7 @@ class FindOurOwnApp {
                         <div class="form-group"><label>State *</label><select name="state" required><option value="Lagos">Lagos</option><option value="Ogun">Ogun</option></select></div>
                         <div class="form-group"><label>Last Seen Location *</label><input type="text" name="lastSeenLocation" required></div>
                         <div class="form-group"><label>Description *</label><textarea name="description" required></textarea></div>
-                        <div class="form-group"><label>Your WhatsApp Number (e.g. 23480...) *</label><input type="tel" name="phoneNumber" required></div>
+                        <div class="form-group"><label>Your WhatsApp Number *</label><input type="tel" name="phoneNumber" required></div>
                         <button type="submit" class="btn btn-primary" style="width: 100%;">${this.user?.role === 'admin' ? 'Publish Immediately' : 'Submit for Approval'}</button>
                     </form>
                 </div>
@@ -241,10 +275,10 @@ class FindOurOwnApp {
                 <h2>Report Found Person</h2>
                 <div class="card" style="max-width: 600px; margin: 2rem auto;">
                     <form onsubmit="app.submitReport(event, 'found')">
-                        <div class="form-group"><label>Description of Person Found *</label><textarea name="description" required placeholder="Describe appearance, clothes, etc."></textarea></div>
-                        <div class="form-group"><label>Current Location *</label><input type="text" name="currentLocation" required placeholder="Where is the person now?"></div>
+                        <div class="form-group"><label>Description *</label><textarea name="description" required></textarea></div>
+                        <div class="form-group"><label>Current Location *</label><input type="text" name="currentLocation" required></div>
                         <div class="form-group"><label>State *</label><select name="state" required><option value="Lagos">Lagos</option><option value="Ogun">Ogun</option></select></div>
-                        <div class="form-group"><label>Your WhatsApp Number (e.g. 23480...) *</label><input type="tel" name="phoneNumber" required></div>
+                        <div class="form-group"><label>Your WhatsApp Number *</label><input type="tel" name="phoneNumber" required></div>
                         <button type="submit" class="btn btn-primary" style="width: 100%;">${this.user?.role === 'admin' ? 'Publish Immediately' : 'Submit for Approval'}</button>
                     </form>
                 </div>
@@ -320,7 +354,6 @@ class FindOurOwnApp {
                     <div class="gallery-content">
                         <h3 class="gallery-title">${person.identified ? 'Identified: ' + person.identifiedName : 'Unidentified Person'}</h3>
                         <p class="gallery-description">${person.description}</p>
-                        <p style="font-size: 0.85rem; color: #666;"><strong>Location:</strong> ${person.currentLocation}</p>
                         <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="app.openWhatsApp('${person.reporterPhone}', 'Hello, I think I know the person found at ${person.currentLocation}')">Contact Finder</button>
                     </div>
                 `;
@@ -366,6 +399,7 @@ class FindOurOwnApp {
                     <div style="display: flex; flex-direction: column; gap: 1rem;">
                         <button class="btn btn-primary" onclick="app.navigate('report-missing')" style="width: 100%;">Report Missing</button>
                         <button class="btn btn-secondary" onclick="app.navigate('report-found')" style="width: 100%;">Report Found</button>
+                        <button class="btn btn-accent" onclick="app.navigate('volunteer')" style="width: 100%;">Volunteer Dashboard</button>
                     </div>
                 </div>
             </div>
