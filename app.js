@@ -1,10 +1,11 @@
-// FindOurOwn - Vanilla JavaScript App with Volunteer Feature
+// FindOurOwn - Vanilla JavaScript App with Google Sign-In
 class FindOurOwnApp {
     constructor() {
         this.currentPage = 'home';
         this.user = null;
         this.mobileMenuOpen = false;
         this.logoutMessage = false;
+        this.googleClientId = '139219211717-ung2bd9htrvq7afu8drjlffv78usi74s.apps.googleusercontent.com';
         
         this.accounts = [
             { email: 'admin@findourown.org', password: 'password123', name: 'Admin User', role: 'admin' },
@@ -111,6 +112,11 @@ class FindOurOwnApp {
         
         app.appendChild(content);
         app.appendChild(this.createFooter());
+
+        if (this.currentPage === 'login') {
+            this.initGoogleSignIn();
+        }
+
         window.scrollTo(0, 0);
     }
 
@@ -221,10 +227,41 @@ class FindOurOwnApp {
                         <div class="form-group"><label>Password</label><input type="password" name="password" required></div>
                         <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
                     </form>
+                    <div style="margin: 1.5rem 0; text-align: center; color: #666; position: relative;">
+                        <hr style="border: 0; border-top: 1px solid #eee;">
+                        <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #fff; padding: 0 10px;">OR</span>
+                    </div>
+                    <div id="google-signin-button" style="display: flex; justify-content: center;"></div>
                 </div>
             </div>
         `;
         return section;
+    }
+
+    initGoogleSignIn() {
+        if (typeof google !== 'undefined') {
+            google.accounts.id.initialize({
+                client_id: this.googleClientId,
+                callback: this.handleGoogleResponse.bind(this)
+            });
+            google.accounts.id.renderButton(
+                document.getElementById("google-signin-button"),
+                { theme: "outline", size: "large", width: "100%" }
+            );
+        } else {
+            setTimeout(() => this.initGoogleSignIn(), 100);
+        }
+    }
+
+    handleGoogleResponse(response) {
+        const payload = JSON.parse(atob(response.credential.split('.')[1]));
+        this.user = {
+            email: payload.email,
+            name: payload.name,
+            role: 'user',
+            picture: payload.picture
+        };
+        this.navigate('dashboard');
     }
 
     handleLogin(event) {
