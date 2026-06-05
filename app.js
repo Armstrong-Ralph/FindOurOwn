@@ -39,9 +39,23 @@ class FindOurOwnApp {
             { name: 'Active Volunteer', email: 'volunteer@findourown.org', phone: '2348000000000', state: 'Lagos', status: 'approved' }
         ];
         this.assignedCases = savedAssignedCases ? JSON.parse(savedAssignedCases) : {};
+        
+        const savedUser = localStorage.getItem('findourown_user');
+        if (savedUser) {
+            this.user = JSON.parse(savedUser);
+            // Determine currentPage based on hash or user role
+            const hash = window.location.hash.replace('#/', '');
+            if (hash) this.currentPage = hash;
+            else if (this.user) this.currentPage = 'dashboard';
+        }
     }
 
     saveData() {
+        if (this.user) {
+            localStorage.setItem('findourown_user', JSON.stringify(this.user));
+        } else {
+            localStorage.removeItem('findourown_user');
+        }
         localStorage.setItem('findourown_missing', JSON.stringify(this.dummyMissing));
         localStorage.setItem('findourown_found', JSON.stringify(this.dummyFound));
         localStorage.setItem('findourown_pending', JSON.stringify(this.pendingReports));
