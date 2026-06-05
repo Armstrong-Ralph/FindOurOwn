@@ -110,6 +110,7 @@ class FindOurOwnApp {
         this.logoutMessage = false;
         if (page !== 'login') this.loginType = null;
         window.history.pushState({ page }, '', '#/' + page);
+        this.saveData();
         this.render();
     }
 
@@ -333,6 +334,7 @@ class FindOurOwnApp {
             role: this.loginType || 'user',
             picture: payload.picture
         };
+        this.saveData();
         this.navigate('dashboard');
     }
 
@@ -344,6 +346,7 @@ class FindOurOwnApp {
         
         if (account && account.role === this.loginType) {
             this.user = account;
+            this.saveData();
             this.navigate('dashboard');
         } else if (account) {
             alert(`This account is registered as a ${account.role}. Please login through the ${account.role} portal.`);
