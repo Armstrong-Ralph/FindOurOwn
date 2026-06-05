@@ -410,7 +410,6 @@ class FindOurOwnApp {
         }
         const volunteer = this.volunteers.find(v => v.email === this.user.email);
         if (!volunteer || volunteer.status !== 'approved') {
-            alert('You must be an approved volunteer to pick cases. Please apply first!');
             this.navigate('volunteer');
             return;
         }
