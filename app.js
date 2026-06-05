@@ -1,7 +1,8 @@
-// FindOurOwn - Role-Based Experience
+// FindOurOwn - Dedicated Role-Based Login Experience
 class FindOurOwnApp {
     constructor() {
         this.currentPage = 'home';
+        this.loginType = null; // 'user', 'volunteer', 'admin'
         this.user = null;
         this.mobileMenuOpen = false;
         this.logoutMessage = false;
@@ -93,6 +94,7 @@ class FindOurOwnApp {
         this.currentPage = page;
         this.mobileMenuOpen = false;
         this.logoutMessage = false;
+        if (page !== 'login') this.loginType = null;
         window.history.pushState({ page }, '', '#/' + page);
         this.render();
     }
@@ -119,7 +121,7 @@ class FindOurOwnApp {
         app.appendChild(content);
         app.appendChild(this.createFooter());
 
-        if (this.currentPage === 'login') {
+        if (this.currentPage === 'login' && this.loginType && this.loginType !== 'admin') {
             this.initGoogleSignIn();
         }
 
@@ -247,53 +249,51 @@ class FindOurOwnApp {
 
     renderLogin() {
         const section = document.createElement('section');
-        section.innerHTML = `
-            <div class="container">
+        const container = document.createElement('div');
+        container.className = 'container';
+        
+        if (!this.loginType) {
+            container.innerHTML = `
                 <div class="card" style="max-width: 500px; margin: 2rem auto;">
                     <h2 style="text-align: center; margin-bottom: 2rem;">Select Login Type</h2>
                     <div style="display: flex; flex-direction: column; gap: 1rem;">
-                        <button class="btn btn-primary" onclick="app.quickLogin('user')" style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 1.5rem;">
-                            <span>👤 Login as User</span>
-                            <span style="font-size: 0.8rem; opacity: 0.8;">(Report Missing/Found)</span>
-                        </button>
-                        <button class="btn btn-secondary" onclick="app.quickLogin('volunteer')" style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 1.5rem;">
-                            <span>🤝 Login as Volunteer</span>
-                            <span style="font-size: 0.8rem; opacity: 0.8;">(Help with Cases)</span>
-                        </button>
-                        <button class="btn btn-accent" onclick="app.quickLogin('admin')" style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 1.5rem;">
-                            <span>🛡️ Login as Admin</span>
-                            <span style="font-size: 0.8rem; opacity: 0.8;">(Approve Reports)</span>
-                        </button>
+                        <button class="btn btn-primary" onclick="app.setLoginType('user')" style="width: 100%; padding: 1.5rem;">👤 Login as User</button>
+                        <button class="btn btn-secondary" onclick="app.setLoginType('volunteer')" style="width: 100%; padding: 1.5rem;">🤝 Login as Volunteer</button>
+                        <button class="btn btn-accent" onclick="app.setLoginType('admin')" style="width: 100%; padding: 1.5rem;">🛡️ Login as Admin</button>
                     </div>
+                </div>
+            `;
+        } else {
+            const title = this.loginType.charAt(0).toUpperCase() + this.loginType.slice(1);
+            container.innerHTML = `
+                <div class="card" style="max-width: 500px; margin: 2rem auto;">
+                    <button class="btn btn-sm" onclick="app.setLoginType(null)" style="margin-bottom: 1rem;">← Back</button>
+                    <h2 style="text-align: center; margin-bottom: 2rem;">${title} Login</h2>
                     
-                    <div style="margin: 2rem 0; text-align: center; color: #666; position: relative;">
-                        <hr style="border: 0; border-top: 1px solid #eee;">
-                        <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #fff; padding: 0 10px;">OR USE EMAIL</span>
-                    </div>
-
                     <form onsubmit="app.handleLogin(event)">
                         <div class="form-group"><label>Email</label><input type="email" name="email" required></div>
                         <div class="form-group"><label>Password</label><input type="password" name="password" required></div>
-                        <button type="submit" class="btn btn-primary" style="width: 100%;">Login with Credentials</button>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
                     </form>
-                    
-                    <div style="margin: 1.5rem 0; text-align: center; color: #666; position: relative;">
-                        <hr style="border: 0; border-top: 1px solid #eee;">
-                        <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #fff; padding: 0 10px;">OR</span>
-                    </div>
-                    <div id="google-signin-button" style="display: flex; justify-content: center;"></div>
+
+                    ${this.loginType !== 'admin' ? `
+                        <div style="margin: 2rem 0; text-align: center; color: #666; position: relative;">
+                            <hr style="border: 0; border-top: 1px solid #eee;">
+                            <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #fff; padding: 0 10px;">OR</span>
+                        </div>
+                        <div id="google-signin-button" style="display: flex; justify-content: center;"></div>
+                    ` : ''}
                 </div>
-            </div>
-        `;
+            `;
+        }
+        
+        section.appendChild(container);
         return section;
     }
 
-    quickLogin(role) {
-        const account = this.accounts.find(a => a.role === role);
-        if (account) {
-            this.user = account;
-            this.navigate('dashboard');
-        }
+    setLoginType(type) {
+        this.loginType = type;
+        this.render();
     }
 
     initGoogleSignIn() {
@@ -316,7 +316,7 @@ class FindOurOwnApp {
         this.user = {
             email: payload.email,
             name: payload.name,
-            role: 'user',
+            role: this.loginType || 'user',
             picture: payload.picture
         };
         this.navigate('dashboard');
@@ -327,9 +327,12 @@ class FindOurOwnApp {
         const email = event.target.email.value;
         const password = event.target.password.value;
         const account = this.accounts.find(a => a.email === email && a.password === password);
-        if (account) {
+        
+        if (account && account.role === this.loginType) {
             this.user = account;
             this.navigate('dashboard');
+        } else if (account) {
+            alert(`This account is registered as a ${account.role}. Please login through the ${account.role} portal.`);
         } else {
             alert('Invalid credentials.');
         }
@@ -337,6 +340,7 @@ class FindOurOwnApp {
 
     logout() {
         this.user = null;
+        this.loginType = null;
         this.logoutMessage = true;
         this.navigate('home');
     }
