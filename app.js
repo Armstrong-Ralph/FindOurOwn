@@ -49,41 +49,11 @@ class FindOurOwnApp {
         ];
         this.assignedCases = savedAssignedCases ? JSON.parse(savedAssignedCases) : {};
 
-        // Smart Dummy Data Logic (Auto-generate based on date)
-        this.generateSmartData();
-
         // Session Restoration
         if (savedUser) {
             this.user = JSON.parse(savedUser);
             const hash = window.location.hash.replace('#/', '');
             this.currentPage = hash || 'dashboard';
-        }
-    }
-
-    generateSmartData() {
-        const today = new Date();
-        const lastUpdate = localStorage.getItem('findourown_last_smart_update');
-        const todayStr = today.toISOString().split('T')[0];
-
-        if (lastUpdate !== todayStr) {
-            // Logic to add 1-3 reports if they don't exist for today
-            const count = Math.floor(Math.random() * 3) + 1;
-            for(let i=0; i<count; i++) {
-                const newId = Date.now() + i;
-                this.dummyMissing.push({
-                    id: newId,
-                    name: `Auto Gen ${i+1}`,
-                    age: Math.floor(Math.random() * 50) + 5,
-                    gender: i % 2 === 0 ? 'Male' : 'Female',
-                    state: 'Lagos',
-                    lastSeenLocation: 'Generated Area',
-                    description: 'This is an automatically generated report for demonstration.',
-                    phoneNumber: '2348000000000',
-                    date: todayStr
-                });
-            }
-            localStorage.setItem('findourown_last_smart_update', todayStr);
-            this.saveData();
         }
     }
 
@@ -234,11 +204,19 @@ class FindOurOwnApp {
         
         if (this.loginType === 'admin') {
             const admin = this.admins.find(a => a.email === email && a.password === password);
-            if (admin) { this.user = { ...admin, role: 'admin' }; this.navigate('dashboard'); }
+            if (admin) { 
+                this.user = { ...admin, role: 'admin' }; 
+                this.saveData(); // Save session immediately
+                this.navigate('dashboard'); 
+            }
             else alert('Invalid Admin Credentials');
         } else {
             const acc = this.accounts.find(a => a.email === email && a.password === password);
-            if (acc && acc.role === this.loginType) { this.user = acc; this.navigate('dashboard'); }
+            if (acc && acc.role === this.loginType) { 
+                this.user = acc; 
+                this.saveData(); // Save session immediately
+                this.navigate('dashboard'); 
+            }
             else alert('Invalid Credentials for this role');
         }
     }
@@ -460,7 +438,17 @@ class FindOurOwnApp {
     updateProfile(e) {
         e.preventDefault();
         this.user.name = e.target.name.value;
-        this.saveData(); alert('Profile Updated!'); this.render();
+        
+        // Also update the account in the persistent accounts list if it exists
+        const acc = this.accounts.find(a => a.email === this.user.email);
+        if (acc) acc.name = this.user.name;
+        
+        const admin = this.admins.find(a => a.email === this.user.email);
+        if (admin) admin.name = this.user.name;
+
+        this.saveData(); 
+        alert('Profile Updated!'); 
+        this.render();
     }
 
     renderMissingPersons() {
