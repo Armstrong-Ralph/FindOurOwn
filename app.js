@@ -1,37 +1,46 @@
-// FindOurOwn - Dedicated Role-Based Login Experience
+// FindOurOwn - Comprehensive Update
 class FindOurOwnApp {
     constructor() {
         this.currentPage = 'home';
-        this.loginType = null; // 'user', 'volunteer', 'admin'
+        this.loginType = null;
         this.user = null;
         this.mobileMenuOpen = false;
         this.logoutMessage = false;
         this.googleClientId = '139219211717-ung2bd9htrvq7afu8drjlffv78usi74s.apps.googleusercontent.com';
-        
-        this.accounts = [
-            { email: 'admin@findourown.org', password: 'password123', name: 'Admin User', role: 'admin' },
-            { email: 'user@findourown.org', password: 'password123', name: 'Standard User', role: 'user' },
-            { email: 'volunteer@findourown.org', password: 'password123', name: 'Active Volunteer', role: 'volunteer' }
-        ];
+        this.adminEmail = 'olaribigbea0389@student.babcock.edu.ng';
 
         this.initData();
         this.init();
     }
 
     initData() {
+        // Core Storage
         const savedMissing = localStorage.getItem('findourown_missing');
         const savedFound = localStorage.getItem('findourown_found');
         const savedPending = localStorage.getItem('findourown_pending');
         const savedVolunteers = localStorage.getItem('findourown_volunteers');
         const savedAssignedCases = localStorage.getItem('findourown_assigned_cases');
+        const savedAdmins = localStorage.getItem('findourown_admins');
+        const savedUser = localStorage.getItem('findourown_user');
 
+        // Accounts & Roles
+        this.admins = savedAdmins ? JSON.parse(savedAdmins) : [
+            { email: 'admin@findourown.org', password: 'password123', name: 'Primary Admin' }
+        ];
+
+        this.accounts = [
+            { email: 'user@findourown.org', password: 'password123', name: 'Standard User', role: 'user' },
+            { email: 'volunteer@findourown.org', password: 'password123', name: 'Active Volunteer', role: 'volunteer' }
+        ];
+
+        // People Data
         this.dummyMissing = savedMissing ? JSON.parse(savedMissing) : [
-            { id: 1, name: 'Chidi Okafor', age: 12, gender: 'Male', state: 'Lagos', lastSeenLocation: 'Ikeja Along', description: 'Last seen wearing a blue school uniform.', phoneNumber: '2348012345678' },
-            { id: 2, name: 'Amina Bello', age: 24, gender: 'Female', state: 'Ogun', lastSeenLocation: 'Mowe Bus Stop', description: 'Fair complexion, wearing a green hijab.', phoneNumber: '2348123456789' }
+            { id: 1, name: 'Chidi Okafor', age: 12, gender: 'Male', state: 'Lagos', lastSeenLocation: 'Ikeja Along', description: 'Last seen wearing a blue school uniform.', phoneNumber: '2348012345678', date: '2026-06-01' },
+            { id: 2, name: 'Amina Bello', age: 24, gender: 'Female', state: 'Ogun', lastSeenLocation: 'Mowe Bus Stop', description: 'Fair complexion, wearing a green hijab.', phoneNumber: '2348123456789', date: '2026-06-02' }
         ];
 
         this.dummyFound = savedFound ? JSON.parse(savedFound) : [
-            { id: 101, description: 'Young boy found near Ojota.', currentLocation: 'Ojota Police Station', state: 'Lagos', identified: false, reporterPhone: '2348011112222' }
+            { id: 101, description: 'Young boy found near Ojota.', currentLocation: 'Ojota Police Station', state: 'Lagos', identified: false, reporterPhone: '2348011112222', date: '2026-06-01' }
         ];
 
         this.pendingReports = savedPending ? JSON.parse(savedPending) : [];
@@ -39,23 +48,50 @@ class FindOurOwnApp {
             { name: 'Active Volunteer', email: 'volunteer@findourown.org', phone: '2348000000000', state: 'Lagos', status: 'approved' }
         ];
         this.assignedCases = savedAssignedCases ? JSON.parse(savedAssignedCases) : {};
-        
-        const savedUser = localStorage.getItem('findourown_user');
+
+        // Smart Dummy Data Logic (Auto-generate based on date)
+        this.generateSmartData();
+
+        // Session Restoration
         if (savedUser) {
             this.user = JSON.parse(savedUser);
-            // Determine currentPage based on hash or user role
             const hash = window.location.hash.replace('#/', '');
-            if (hash) this.currentPage = hash;
-            else if (this.user) this.currentPage = 'dashboard';
+            this.currentPage = hash || 'dashboard';
+        }
+    }
+
+    generateSmartData() {
+        const today = new Date();
+        const lastUpdate = localStorage.getItem('findourown_last_smart_update');
+        const todayStr = today.toISOString().split('T')[0];
+
+        if (lastUpdate !== todayStr) {
+            // Logic to add 1-3 reports if they don't exist for today
+            const count = Math.floor(Math.random() * 3) + 1;
+            for(let i=0; i<count; i++) {
+                const newId = Date.now() + i;
+                this.dummyMissing.push({
+                    id: newId,
+                    name: `Auto Gen ${i+1}`,
+                    age: Math.floor(Math.random() * 50) + 5,
+                    gender: i % 2 === 0 ? 'Male' : 'Female',
+                    state: 'Lagos',
+                    lastSeenLocation: 'Generated Area',
+                    description: 'This is an automatically generated report for demonstration.',
+                    phoneNumber: '2348000000000',
+                    date: todayStr
+                });
+            }
+            localStorage.setItem('findourown_last_smart_update', todayStr);
+            this.saveData();
         }
     }
 
     saveData() {
-        if (this.user) {
-            localStorage.setItem('findourown_user', JSON.stringify(this.user));
-        } else {
-            localStorage.removeItem('findourown_user');
-        }
+        if (this.user) localStorage.setItem('findourown_user', JSON.stringify(this.user));
+        else localStorage.removeItem('findourown_user');
+
+        localStorage.setItem('findourown_admins', JSON.stringify(this.admins));
         localStorage.setItem('findourown_missing', JSON.stringify(this.dummyMissing));
         localStorage.setItem('findourown_found', JSON.stringify(this.dummyFound));
         localStorage.setItem('findourown_pending', JSON.stringify(this.pendingReports));
@@ -63,13 +99,12 @@ class FindOurOwnApp {
         localStorage.setItem('findourown_assigned_cases', JSON.stringify(this.assignedCases));
     }
 
-    async init() {
+    init() {
         this.setupViewport();
         this.setupRouting();
-        this.setupTouchHandlers();
         this.render();
     }
-    
+
     setupViewport() {
         let viewport = document.querySelector('meta[name="viewport"]');
         if (!viewport) {
@@ -77,37 +112,16 @@ class FindOurOwnApp {
             viewport.name = 'viewport';
             document.head.appendChild(viewport);
         }
-        viewport.content = 'width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes';
-    }
-    
-    setupTouchHandlers() {
-        document.addEventListener('touchstart', (e) => {
-            const el = e.target.closest('.btn, a');
-            if (el) el.style.opacity = '0.8';
-        }, { passive: true });
-        
-        document.addEventListener('touchend', (e) => {
-            const el = e.target.closest('.btn, a');
-            if (el) el.style.opacity = '1';
-        }, { passive: true });
+        viewport.content = 'width=device-width, initial-scale=1.0, viewport-fit=cover';
     }
 
     setupRouting() {
-        window.addEventListener('popstate', () => {
-            this.mobileMenuOpen = false;
-            this.render();
-        });
-    }
-    
-    toggleMobileMenu() {
-        this.mobileMenuOpen = !this.mobileMenuOpen;
-        this.render();
+        window.addEventListener('popstate', () => this.render());
     }
 
     navigate(page) {
         this.currentPage = page;
         this.mobileMenuOpen = false;
-        this.logoutMessage = false;
         if (page !== 'login') this.loginType = null;
         window.history.pushState({ page }, '', '#/' + page);
         this.saveData();
@@ -130,521 +144,367 @@ class FindOurOwnApp {
             case 'dashboard': content = this.renderDashboard(); break;
             case 'admin': content = this.renderAdmin(); break;
             case 'volunteer': content = this.renderVolunteer(); break;
+            case 'profile': content = this.renderProfile(); break;
             default: content = this.renderHome();
         }
         
         app.appendChild(content);
         app.appendChild(this.createFooter());
-
-        if (this.currentPage === 'login' && this.loginType && this.loginType !== 'admin') {
-            this.initGoogleSignIn();
-        }
-
+        if (this.currentPage === 'login' && this.loginType && this.loginType !== 'admin') this.initGoogleSignIn();
         window.scrollTo(0, 0);
     }
 
     createNav() {
         const nav = document.createElement('nav');
-        const links = [
-            { name: 'Home', page: 'home' },
-            { name: 'Missing', page: 'missing-persons' },
-            { name: 'Found', page: 'found-persons' },
-            { name: 'Report', page: 'report-missing' }
-        ];
-
+        const links = [{ name: 'Home', page: 'home' }, { name: 'Missing', page: 'missing-persons' }, { name: 'Found', page: 'found-persons' }, { name: 'Report', page: 'report-missing' }];
         if (this.user) {
             links.push({ name: 'Dashboard', page: 'dashboard' });
-            if (this.user.role === 'admin') {
-                links.push({ name: 'Admin', page: 'admin' });
-            }
+            if (this.user.role === 'admin') links.push({ name: 'Admin', page: 'admin' });
+            links.push({ name: 'Profile', page: 'profile' });
         }
-
         nav.innerHTML = `
             <div class="container">
-                <a href="#" class="logo" onclick="app.navigate('home'); return false;">
-                    <div class="logo-icon">❤️</div>
-                    <span>FindOurOwn</span>
-                </a>
+                <a href="#" class="logo" onclick="app.navigate('home'); return false;">❤️ FindOurOwn</a>
                 <ul class="nav-links ${this.mobileMenuOpen ? 'active' : ''}">
-                    ${links.map(link => `<li><a href="#" onclick="app.navigate('${link.page}'); return false;">${link.name}</a></li>`).join('')}
-                    ${this.user ? 
-                        `<li><a href="#" onclick="app.logout(); return false;">Logout</a></li>` : 
-                        `<li><a href="#" onclick="app.navigate('login'); return false;" class="btn btn-primary">Login</a></li>`
-                    }
+                    ${links.map(l => `<li><a href="#" onclick="app.navigate('${l.page}'); return false;">${l.name}</a></li>`).join('')}
+                    ${this.user ? `<li><a href="#" onclick="app.logout(); return false;">Logout</a></li>` : `<li><a href="#" onclick="app.navigate('login'); return false;" class="btn btn-primary">Login</a></li>`}
                 </ul>
-                <div class="mobile-toggle" onclick="app.toggleMobileMenu()">
-                    <span></span><span></span><span></span>
-                </div>
+                <div class="mobile-toggle" onclick="app.toggleMobileMenu()"><span></span><span></span><span></span></div>
             </div>
         `;
         return nav;
     }
 
+    toggleMobileMenu() { this.mobileMenuOpen = !this.mobileMenuOpen; this.render(); }
+
     renderHome() {
         const section = document.createElement('section');
         section.className = 'hero';
-        const approvedVolunteers = this.volunteers.filter(v => v.status === 'approved').length;
         section.innerHTML = `
             <div class="container">
-                ${this.logoutMessage ? `<div class="alert success">You have been logged out successfully.</div>` : ''}
                 <h1>FindOurOwn</h1>
-                <p>Reuniting missing persons with their families across Lagos and Ogun States.</p>
-                <div class="hero-buttons" style="flex-direction: column; max-width: 300px; margin: 0 auto;">
-                    <button class="btn btn-primary" onclick="app.navigate('report-missing')" style="width: 100%;">Report Missing Person</button>
-                    <button class="btn btn-secondary" onclick="app.navigate('report-found')" style="width: 100%; margin-top: 1rem;">Report Found Person</button>
-                    <button class="btn btn-accent" onclick="app.navigate('volunteer')" style="width: 100%; margin-top: 1rem;">Join as Volunteer</button>
-                </div>
-                <div class="stats">
-                    <div class="stat"><div class="stat-number">${this.dummyMissing.length}</div><div class="stat-label">Active Reports</div></div>
-                    <div class="stat"><div class="stat-number">${124 + approvedVolunteers}</div><div class="stat-label">Volunteers</div></div>
-                    <div class="stat"><div class="stat-number">2</div><div class="stat-label">States</div></div>
+                <p>Reuniting families across Lagos and Ogun. Presentation Ready for Monday.</p>
+                <div class="hero-buttons" style="display: flex; flex-direction: column; gap: 1rem; max-width: 300px; margin: 2rem auto;">
+                    <button class="btn btn-primary" onclick="app.navigate('report-missing')">Report Missing</button>
+                    <button class="btn btn-secondary" onclick="app.navigate('report-found')">Report Found</button>
+                    <button class="btn btn-accent" onclick="app.navigate('volunteer')">Join as Volunteer</button>
                 </div>
             </div>
         `;
         return section;
     }
 
-    renderVolunteer() {
-        const section = document.createElement('section');
-        const isVolunteer = this.volunteers.find(v => v.email === this.user?.email);
-        
-        if (isVolunteer) {
-            section.innerHTML = `
-                <div class="container">
-                    <h2>Volunteer Status</h2>
-                    <div class="card" style="max-width: 500px; margin: 2rem auto; text-align: center;">
-                        <div style="font-size: 3rem; margin-bottom: 1rem;">${isVolunteer.status === 'approved' ? '✅' : '⏳'}</div>
-                        <h3>Status: ${isVolunteer.status.charAt(0).toUpperCase() + isVolunteer.status.slice(1)}</h3>
-                        <p style="margin-top: 1rem;">${isVolunteer.status === 'approved' ? 'You are an approved volunteer! You can now pick cases to help with.' : 'Your application is being reviewed by an admin.'}</p>
-                        <button class="btn btn-primary" onclick="app.navigate('dashboard')" style="margin-top: 1.5rem;">Go to Dashboard</button>
-                    </div>
-                </div>
-            `;
-        } else {
-            section.innerHTML = `
-                <div class="container">
-                    <h2>Become a Volunteer</h2>
-                    <div class="card" style="max-width: 500px; margin: 2rem auto;">
-                        <form onsubmit="app.submitVolunteer(event)">
-                            <div class="form-group"><label>Full Name *</label><input type="text" name="name" value="${this.user?.name || ''}" required></div>
-                            <div class="form-group"><label>Email *</label><input type="email" name="email" value="${this.user?.email || ''}" required></div>
-                            <div class="form-group"><label>WhatsApp Number *</label><input type="tel" name="phone" required></div>
-                            <div class="form-group"><label>State *</label><select name="state" required><option value="Lagos">Lagos</option><option value="Ogun">Ogun</option></select></div>
-                            <div class="form-group"><label>Why do you want to help? *</label><textarea name="reason" required></textarea></div>
-                            <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Application</button>
-                        </form>
-                    </div>
-                </div>
-            `;
-        }
-        return section;
-    }
-
-    submitVolunteer(event) {
-        event.preventDefault();
-        const formData = new FormData(event.target);
-        const email = formData.get('email');
-        if (this.volunteers.find(v => v.email === email)) {
-            alert('You have already applied!');
-            return;
-        }
-        this.volunteers.push({
-            id: Date.now(),
-            name: formData.get('name'),
-            email: email,
-            phone: formData.get('phone'),
-            state: formData.get('state'),
-            reason: formData.get('reason'),
-            status: 'pending'
-        });
-        this.saveData();
-        alert('Application submitted! An admin will review it shortly.');
-        this.render();
-    }
-
     renderLogin() {
-        const section = document.createElement('section');
         const container = document.createElement('div');
         container.className = 'container';
-        
         if (!this.loginType) {
             container.innerHTML = `
-                <div class="card" style="max-width: 500px; margin: 2rem auto;">
-                    <h2 style="text-align: center; margin-bottom: 2rem;">Select Login Type</h2>
-                    <div style="display: flex; flex-direction: column; gap: 1rem;">
-                        <button class="btn btn-primary" onclick="app.setLoginType('user')" style="width: 100%; padding: 1.5rem;">👤 Login as User</button>
-                        <button class="btn btn-secondary" onclick="app.setLoginType('volunteer')" style="width: 100%; padding: 1.5rem;">🤝 Login as Volunteer</button>
-                        <button class="btn btn-accent" onclick="app.setLoginType('admin')" style="width: 100%; padding: 1.5rem;">🛡️ Login as Admin</button>
+                <div class="card" style="max-width: 500px; margin: 4rem auto; text-align: center;">
+                    <h2>Login to FindOurOwn</h2>
+                    <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 2rem;">
+                        <button class="btn btn-primary" onclick="app.setLoginType('user')">Login as User</button>
+                        <button class="btn btn-secondary" onclick="app.setLoginType('volunteer')">Login as Volunteer</button>
+                        <button class="btn btn-accent" onclick="app.setLoginType('admin')">Login as Admin</button>
                     </div>
-                </div>
-            `;
+                </div>`;
         } else {
-            const title = this.loginType.charAt(0).toUpperCase() + this.loginType.slice(1);
             container.innerHTML = `
-                <div class="card" style="max-width: 500px; margin: 2rem auto;">
-                    <button class="btn btn-sm" onclick="app.setLoginType(null)" style="margin-bottom: 1rem;">← Back</button>
-                    <h2 style="text-align: center; margin-bottom: 2rem;">${title} Login</h2>
-                    
+                <div class="card" style="max-width: 500px; margin: 4rem auto;">
+                    <button class="btn btn-sm" onclick="app.setLoginType(null)">← Back</button>
+                    <h2 style="text-align: center; margin: 1rem 0;">${this.loginType.toUpperCase()} Login</h2>
                     <form onsubmit="app.handleLogin(event)">
                         <div class="form-group"><label>Email</label><input type="email" name="email" required></div>
                         <div class="form-group"><label>Password</label><input type="password" name="password" required></div>
                         <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
                     </form>
-
-                    ${this.loginType !== 'admin' ? `
-                        <div style="margin: 2rem 0; text-align: center; color: #666; position: relative;">
-                            <hr style="border: 0; border-top: 1px solid #eee;">
-                            <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #fff; padding: 0 10px;">OR</span>
-                        </div>
-                        <div id="google-signin-button" style="display: flex; justify-content: center;"></div>
-                    ` : ''}
-                </div>
-            `;
+                    ${this.loginType !== 'admin' ? `<div style="margin: 2rem 0; text-align: center;">OR</div><div id="google-signin-button" style="display: flex; justify-content: center;"></div>` : ''}
+                </div>`;
         }
-        
-        section.appendChild(container);
-        return section;
+        return container;
     }
 
-    setLoginType(type) {
-        this.loginType = type;
-        this.render();
+    setLoginType(t) { this.loginType = t; this.render(); }
+
+    handleLogin(e) {
+        e.preventDefault();
+        const email = e.target.email.value;
+        const password = e.target.password.value;
+        
+        if (this.loginType === 'admin') {
+            const admin = this.admins.find(a => a.email === email && a.password === password);
+            if (admin) { this.user = { ...admin, role: 'admin' }; this.navigate('dashboard'); }
+            else alert('Invalid Admin Credentials');
+        } else {
+            const acc = this.accounts.find(a => a.email === email && a.password === password);
+            if (acc && acc.role === this.loginType) { this.user = acc; this.navigate('dashboard'); }
+            else alert('Invalid Credentials for this role');
+        }
     }
 
     initGoogleSignIn() {
         if (typeof google !== 'undefined') {
-            google.accounts.id.initialize({
-                client_id: this.googleClientId,
-                callback: this.handleGoogleResponse.bind(this)
-            });
-            google.accounts.id.renderButton(
-                document.getElementById("google-signin-button"),
-                { theme: "outline", size: "large", width: "100%" }
-            );
-        } else {
-            setTimeout(() => this.initGoogleSignIn(), 100);
-        }
+            google.accounts.id.initialize({ client_id: this.googleClientId, callback: (r) => {
+                const p = JSON.parse(atob(r.credential.split('.')[1]));
+                this.user = { email: p.email, name: p.name, role: this.loginType || 'user', picture: p.picture };
+                this.saveData(); this.navigate('dashboard');
+            }});
+            google.accounts.id.renderButton(document.getElementById("google-signin-button"), { theme: "outline", size: "large", width: "100%" });
+        } else setTimeout(() => this.initGoogleSignIn(), 100);
     }
 
-    handleGoogleResponse(response) {
-        const payload = JSON.parse(atob(response.credential.split('.')[1]));
-        this.user = {
-            email: payload.email,
-            name: payload.name,
-            role: this.loginType || 'user',
-            picture: payload.picture
-        };
-        this.saveData();
-        this.navigate('dashboard');
-    }
+    logout() { this.user = null; this.loginType = null; this.saveData(); this.navigate('home'); }
 
-    handleLogin(event) {
-        event.preventDefault();
-        const email = event.target.email.value;
-        const password = event.target.password.value;
-        const account = this.accounts.find(a => a.email === email && a.password === password);
+    renderDashboard() {
+        const container = document.createElement('div');
+        container.className = 'container';
+        const role = this.user.role;
         
-        if (account && account.role === this.loginType) {
-            this.user = account;
-            this.saveData();
-            this.navigate('dashboard');
-        } else if (account) {
-            alert(`This account is registered as a ${account.role}. Please login through the ${account.role} portal.`);
-        } else {
-            alert('Invalid credentials.');
-        }
-    }
-
-    logout() {
-        this.user = null;
-        this.loginType = null;
-        this.logoutMessage = true;
-        this.navigate('home');
-    }
-
-    renderMissingPersons() {
-        const section = document.createElement('section');
-        section.innerHTML = `<div class="container"><h2>Missing Persons</h2><div id="gallery" class="gallery"></div></div>`;
-        setTimeout(() => {
-            const gallery = document.getElementById('gallery');
-            this.dummyMissing.forEach(person => {
-                const isAssigned = this.user && this.assignedCases[this.user.email]?.includes(person.id);
-                const card = document.createElement('div');
-                card.className = 'gallery-item';
-                card.innerHTML = `
-                    <div style="background-color: #f0f0f0; height: 200px; display: flex; align-items: center; justify-content: center; font-size: 3rem;">👤</div>
-                    <div class="gallery-content">
-                        <h3 class="gallery-title">${person.name}</h3>
-                        <div class="gallery-meta">Age: ${person.age} | ${person.state}</div>
-                        <p class="gallery-description">${person.description}</p>
-                        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem;">
-                            <button class="btn btn-accent" style="width: 100%;" onclick="app.openWhatsApp('${person.phoneNumber}', 'Hello, I have info regarding ${person.name}')">Contact via WhatsApp</button>
-                            <button class="btn ${isAssigned ? 'btn-secondary' : 'btn-primary'}" style="width: 100%;" onclick="app.volunteerForCase(${person.id}, 'missing')">
-                                ${isAssigned ? '✅ You are helping' : 'Volunteer for this case'}
-                            </button>
-                        </div>
-                    </div>
-                `;
-                gallery.appendChild(card);
-            });
-        }, 0);
-        return section;
-    }
-
-    renderFoundPersons() {
-        const section = document.createElement('section');
-        section.innerHTML = `<div class="container"><h2>Found Persons</h2><div id="found-gallery" class="gallery"></div></div>`;
-        setTimeout(() => {
-            const gallery = document.getElementById('found-gallery');
-            this.dummyFound.forEach(person => {
-                const isAssigned = this.user && this.assignedCases[this.user.email]?.includes(person.id);
-                const card = document.createElement('div');
-                card.className = 'gallery-item' + (person.identified ? ' identified' : '');
-                card.innerHTML = `
-                    <div style="background-color: ${person.identified ? '#d4edda' : '#e8f4fd'}; height: 200px; display: flex; align-items: center; justify-content: center; font-size: 3rem;">${person.identified ? '✅' : '🔍'}</div>
-                    <div class="gallery-content">
-                        <h3 class="gallery-title">${person.identified ? 'Identified: ' + person.identifiedName : 'Unidentified Person'}</h3>
-                        <p class="gallery-description">${person.description}</p>
-                        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem;">
-                            <button class="btn btn-primary" style="width: 100%;" onclick="app.openWhatsApp('${person.reporterPhone}', 'Hello, I think I know the person found at ${person.currentLocation}')">Contact Finder</button>
-                            <button class="btn ${isAssigned ? 'btn-secondary' : 'btn-primary'}" style="width: 100%;" onclick="app.volunteerForCase(${person.id}, 'found')">
-                                ${isAssigned ? '✅ You are helping' : 'Volunteer for this case'}
-                            </button>
-                        </div>
-                    </div>
-                `;
-                gallery.appendChild(card);
-            });
-        }, 0);
-        return section;
-    }
-
-    volunteerForCase(id, type) {
-        if (!this.user) {
-            alert('Please login to volunteer for cases.');
-            this.navigate('login');
-            return;
-        }
-        const volunteer = this.volunteers.find(v => v.email === this.user.email);
-        if (!volunteer || volunteer.status !== 'approved') {
-            this.navigate('volunteer');
-            return;
-        }
-
-        if (!this.assignedCases[this.user.email]) this.assignedCases[this.user.email] = [];
-        if (this.assignedCases[this.user.email].includes(id)) {
-            alert('You are already helping with this case!');
-            return;
-        }
-
-        this.assignedCases[this.user.email].push(id);
-        this.saveData();
-        alert('Thank you! This case has been added to your dashboard.');
-        this.render();
-    }
-
-    openWhatsApp(phone, message) {
-        window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
-    }
-
-    renderAdmin() {
-        const section = document.createElement('section');
-        section.innerHTML = `
-            <div class="container">
-                <h2>Admin Dashboard</h2>
-                <div style="margin-top: 2rem;">
-                    <h3>Pending Reports (${this.pendingReports.length})</h3>
-                    <div id="pending-reports-list"></div>
-                    
-                    <h3 style="margin-top: 3rem;">Volunteer Applications (${this.volunteers.filter(v => v.status === 'pending').length})</h3>
-                    <div id="pending-volunteers-list"></div>
+        container.innerHTML = `
+            <div style="margin: 2rem 0;">
+                <h2>Welcome, ${this.user.name}</h2>
+                <span class="badge" style="background: #eee; padding: 4px 12px; border-radius: 20px;">Role: ${role.toUpperCase()}</span>
+            </div>
+            <div class="card">
+                <h3>Quick Actions</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem;">
+                    ${role === 'admin' ? `
+                        <button class="btn btn-primary" onclick="app.navigate('admin')">Approve Reports</button>
+                        <button class="btn btn-secondary" onclick="app.navigate('admin')">Approve Volunteers</button>
+                        <button class="btn btn-accent" onclick="app.navigate('admin')">Manage Admins</button>
+                    ` : `
+                        <button class="btn btn-primary" onclick="app.navigate('report-missing')">Report Missing</button>
+                        <button class="btn btn-secondary" onclick="app.navigate('report-found')">Report Found</button>
+                    `}
                 </div>
             </div>
         `;
-        setTimeout(() => {
-            const reportList = document.getElementById('pending-reports-list');
-            this.pendingReports.forEach((report, index) => {
-                const card = document.createElement('div');
-                card.className = 'card'; card.style.marginBottom = '1rem';
-                card.innerHTML = `<h3>${report.name} (${report.type})</h3><p>${report.description}</p><div style="margin-top: 1rem; display: flex; gap: 1rem;"><button class="btn btn-primary" onclick="app.approveReport(${index})">Approve</button><button class="btn btn-accent" onclick="app.rejectReport(${index})">Reject</button></div>`;
-                reportList.appendChild(card);
-            });
-
-            const volList = document.getElementById('pending-volunteers-list');
-            this.volunteers.filter(v => v.status === 'pending').forEach((vol) => {
-                const card = document.createElement('div');
-                card.className = 'card'; card.style.marginBottom = '1rem';
-                card.innerHTML = `<h3>${vol.name} (${vol.state})</h3><p><strong>Reason:</strong> ${vol.reason}</p><div style="margin-top: 1rem; display: flex; gap: 1rem;"><button class="btn btn-primary" onclick="app.approveVolunteer('${vol.email}')">Approve Volunteer</button><button class="btn btn-accent" onclick="app.rejectVolunteer('${vol.email}')">Reject</button></div>`;
-                volList.appendChild(card);
-            });
-        }, 0);
-        return section;
+        return container;
     }
 
-    approveReport(index) {
-        const report = this.pendingReports.splice(index, 1)[0];
-        if (report.type === 'missing') this.dummyMissing.unshift(report);
-        else this.dummyFound.unshift(report);
+    renderAdmin() {
+        const container = document.createElement('div');
+        container.className = 'container';
+        container.innerHTML = `
+            <h2>Admin Control Panel</h2>
+            <div style="display: grid; gap: 2rem; margin-top: 2rem;">
+                <div class="card">
+                    <h3>Pending Reports (${this.pendingReports.length})</h3>
+                    <div style="margin-top: 1rem;">
+                        ${this.pendingReports.map((r, i) => `
+                            <div style="border-bottom: 1px solid #eee; padding: 1rem 0;">
+                                <strong>${r.name}</strong> - ${r.type}<br>${r.description}
+                                <div style="margin-top: 0.5rem;">
+                                    <button class="btn btn-sm btn-primary" onclick="app.approveReport(${i})">Approve</button>
+                                    <button class="btn btn-sm btn-accent" onclick="app.rejectReport(${i})">Reject</button>
+                                </div>
+                            </div>
+                        `).join('') || '<p>No pending reports.</p>'}
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Volunteer Applications (${this.volunteers.filter(v => v.status === 'pending').length})</h3>
+                    <div style="margin-top: 1rem;">
+                        ${this.volunteers.filter(v => v.status === 'pending').map(v => `
+                            <div style="border-bottom: 1px solid #eee; padding: 1rem 0;">
+                                <strong>${v.name}</strong> (${v.email})<br>${v.reason}
+                                <div style="margin-top: 0.5rem;">
+                                    <button class="btn btn-sm btn-primary" onclick="app.approveVolunteer('${v.email}')">Approve</button>
+                                </div>
+                            </div>
+                        `).join('') || '<p>No pending applications.</p>'}
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Admin Management</h3>
+                    <form onsubmit="app.addAdmin(event)" style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                        <input type="email" name="email" placeholder="Admin Email" required style="flex: 1;">
+                        <input type="password" name="password" placeholder="Password" required style="flex: 1;">
+                        <button type="submit" class="btn btn-primary">Add Admin</button>
+                    </form>
+                    <div style="margin-top: 1rem;">
+                        ${this.admins.map(a => `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #eee;">
+                                <span>${a.email}</span>
+                                ${a.email !== 'admin@findourown.org' ? `<button class="btn btn-sm btn-accent" onclick="app.removeAdmin('${a.email}')">Remove</button>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+        return container;
+    }
+
+    addAdmin(e) {
+        e.preventDefault();
+        const email = e.target.email.value;
+        const password = e.target.password.value;
+        if (this.admins.find(a => a.email === email)) return alert('Admin already exists');
+        this.admins.push({ email, password, name: 'Added Admin' });
+        this.saveData(); this.render();
+    }
+
+    removeAdmin(email) {
+        this.admins = this.admins.filter(a => a.email !== email);
+        this.saveData(); this.render();
+    }
+
+    approveReport(i) {
+        const r = this.pendingReports.splice(i, 1)[0];
+        if (r.type === 'missing') this.dummyMissing.unshift(r);
+        else this.dummyFound.unshift(r);
         this.saveData(); this.render();
     }
 
     approveVolunteer(email) {
-        const vol = this.volunteers.find(v => v.email === email);
-        if (vol) vol.status = 'approved';
+        const v = this.volunteers.find(v => v.email === email);
+        if (v) v.status = 'approved';
         this.saveData(); this.render();
     }
 
-    renderDashboard() {
-        const section = document.createElement('section');
-        const volunteer = this.volunteers.find(v => v.email === this.user.email);
-        const myCases = this.assignedCases[this.user.email] || [];
-        
-        section.innerHTML = `
-            <div class="container">
-                <div style="text-align: center; margin-bottom: 2rem;">
-                    <h2>Welcome, ${this.user.name}</h2>
-                    <div style="color: #666; font-size: 0.9rem;">Logged in as: <span class="badge" style="background: #e8f4fd; color: #004a99; padding: 2px 8px; border-radius: 4px;">${this.user.role.toUpperCase()}</span></div>
-                </div>
-
-                ${this.user.role === 'volunteer' ? `
-                    <div class="card" style="margin-bottom: 2rem;">
-                        <h3>Volunteer Statistics</h3>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
-                            <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; text-align: center;">
-                                <div style="font-size: 1.5rem; font-weight: bold;">${myCases.length}</div>
-                                <div style="font-size: 0.8rem; color: #666;">Active Cases</div>
-                            </div>
-                            <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; text-align: center;">
-                                <div style="font-size: 1.5rem; font-weight: bold;">0</div>
-                                <div style="font-size: 0.8rem; color: #666;">Cases Resolved</div>
-                            </div>
-                        </div>
-                    </div>
-                ` : ''}
-
-                <div class="card" style="max-width: 500px; margin: 0 auto;">
-                    <h3 style="margin-bottom: 1.5rem;">Quick Actions</h3>
-                    <div style="display: flex; flex-direction: column; gap: 1rem;">
-                        <button class="btn btn-primary" onclick="app.navigate('report-missing')" style="width: 100%;">Report Missing</button>
-                        <button class="btn btn-secondary" onclick="app.navigate('report-found')" style="width: 100%;">Report Found</button>
-                        ${this.user.role === 'volunteer' ? '' : `<button class="btn btn-accent" onclick="app.navigate('volunteer')" style="width: 100%;">Volunteer Status</button>`}
-                    </div>
-                </div>
-
-                ${this.user.role === 'volunteer' ? `
-                    <div style="margin-top: 3rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                            <h3>Your Active Cases</h3>
-                            <button class="btn btn-accent btn-sm" onclick="app.navigate('missing-persons')">+ Find New Case</button>
-                        </div>
-                        <div id="active-cases-gallery" class="gallery">
-                            ${myCases.length === 0 ? '<p style="text-align: center; color: #666; grid-column: 1/-1; padding: 2rem;">You haven\'t picked any cases yet. Go to the gallery to help!</p>' : ''}
-                        </div>
-                    </div>
-                ` : ''}
+    renderProfile() {
+        const container = document.createElement('div');
+        container.className = 'container';
+        container.innerHTML = `
+            <div class="card" style="max-width: 500px; margin: 4rem auto;">
+                <h2>Edit Profile</h2>
+                <form onsubmit="app.updateProfile(event)" style="margin-top: 2rem;">
+                    <div class="form-group"><label>Full Name</label><input type="text" name="name" value="${this.user.name}"></div>
+                    <div class="form-group"><label>Email</label><input type="email" value="${this.user.email}" disabled></div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Update Profile</button>
+                </form>
             </div>
         `;
+        return container;
+    }
 
-        if (this.user.role === 'volunteer' && myCases.length > 0) {
-            setTimeout(() => {
-                const gallery = document.getElementById('active-cases-gallery');
-                myCases.forEach(caseId => {
-                    const person = this.dummyMissing.find(m => m.id === caseId) || this.dummyFound.find(f => f.id === caseId);
-                    if (person) {
-                        const card = document.createElement('div');
-                        card.className = 'gallery-item';
-                        card.innerHTML = `
-                            <div style="background-color: #f0f0f0; height: 150px; display: flex; align-items: center; justify-content: center; font-size: 2rem;">👤</div>
-                            <div class="gallery-content">
-                                <h4 class="gallery-title">${person.name || 'Unidentified'}</h4>
-                                <p style="font-size: 0.8rem; color: #666; margin-bottom: 0.5rem;">${person.state} | ${person.lastSeenLocation || person.currentLocation}</p>
-                                <button class="btn btn-accent btn-sm" style="width: 100%;" onclick="app.openWhatsApp('${person.phoneNumber || person.reporterPhone}', 'Update on case: ${person.name || 'Unidentified'}')">Send Update</button>
-                            </div>
-                        `;
-                        gallery.appendChild(card);
-                    }
-                });
-            }, 0);
+    updateProfile(e) {
+        e.preventDefault();
+        this.user.name = e.target.name.value;
+        this.saveData(); alert('Profile Updated!'); this.render();
+    }
+
+    renderMissingPersons() {
+        const container = document.createElement('div');
+        container.className = 'container';
+        container.innerHTML = `<h2>Missing Persons</h2><div class="gallery">${this.dummyMissing.map(p => `
+            <div class="gallery-item">
+                <div style="height: 150px; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 3rem;">👤</div>
+                <div class="gallery-content">
+                    <h3>${p.name}</h3>
+                    <p>${p.description}</p>
+                    <div style="margin-top: 1rem; display: grid; gap: 0.5rem;">
+                        <button class="btn btn-primary" onclick="app.contactReporter('${p.phoneNumber}')">Contact Reporter</button>
+                        <button class="btn btn-secondary" onclick="app.volunteerForCase(${p.id})">Volunteer for Case</button>
+                        <button class="btn btn-accent" onclick="app.iFoundThisPerson(${p.id})">I Found This Person</button>
+                    </div>
+                </div>
+            </div>
+        `).join('')}</div>`;
+        return container;
+    }
+
+    renderFoundPersons() {
+        const container = document.createElement('div');
+        container.className = 'container';
+        container.innerHTML = `<h2>Found Persons</h2><div class="gallery">${this.dummyFound.map(p => `
+            <div class="gallery-item">
+                <div style="height: 150px; background: #e8f4fd; display: flex; align-items: center; justify-content: center; font-size: 3rem;">🔍</div>
+                <div class="gallery-content">
+                    <h3>${p.identified ? 'Identified' : 'Unidentified'}</h3>
+                    <p>${p.description}</p>
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="app.contactReporter('${p.reporterPhone}')">Contact Finder</button>
+                </div>
+            </div>
+        `).join('')}</div>`;
+        return container;
+    }
+
+    contactReporter(phone) {
+        if (!phone || phone === 'null') {
+            window.location.href = `mailto:${this.adminEmail}?subject=Inquiry regarding a case`;
+        } else {
+            window.open(`https://wa.me/${phone.replace(/\D/g, '')}`, '_blank');
         }
-        return section;
+    }
+
+    volunteerForCase(id) {
+        if (!this.user) return this.navigate('login');
+        if (this.user.role !== 'volunteer') {
+            if (confirm('Only volunteers can pick cases. Would you like to become a volunteer?')) {
+                this.navigate('volunteer');
+            }
+            return;
+        }
+        const v = this.volunteers.find(v => v.email === this.user.email);
+        if (!v || v.status !== 'approved') return this.navigate('volunteer');
+        
+        if (!this.assignedCases[this.user.email]) this.assignedCases[this.user.email] = [];
+        if (!this.assignedCases[this.user.email].includes(id)) this.assignedCases[this.user.email].push(id);
+        this.saveData(); alert('Case assigned to you!'); this.render();
+    }
+
+    iFoundThisPerson(id) {
+        alert('Thank you! Please fill out the "Report Found" form to provide details.');
+        this.navigate('report-found');
     }
 
     renderReportMissing() {
-        const section = document.createElement('section');
-        section.innerHTML = `
-            <div class="container">
+        const container = document.createElement('div');
+        container.className = 'container';
+        container.innerHTML = `
+            <div class="card" style="max-width: 600px; margin: 2rem auto;">
                 <h2>Report Missing Person</h2>
-                <div class="card" style="max-width: 600px; margin: 2rem auto;">
-                    <form onsubmit="app.submitReport(event, 'missing')">
-                        <div class="form-group"><label>Full Name *</label><input type="text" name="name" required></div>
-                        <div class="form-group"><label>Age *</label><input type="number" name="age" required></div>
-                        <div class="form-group"><label>Gender *</label><select name="gender" required><option value="Male">Male</option><option value="Female">Female</option></select></div>
-                        <div class="form-group"><label>State *</label><select name="state" required><option value="Lagos">Lagos</option><option value="Ogun">Ogun</option></select></div>
-                        <div class="form-group"><label>Last Seen Location *</label><input type="text" name="lastSeenLocation" required></div>
-                        <div class="form-group"><label>Description *</label><textarea name="description" required></textarea></div>
-                        <div class="form-group"><label>Your WhatsApp Number *</label><input type="tel" name="phoneNumber" required></div>
-                        <button type="submit" class="btn btn-primary" style="width: 100%;">${this.user?.role === 'admin' ? 'Publish Immediately' : 'Submit for Approval'}</button>
-                    </form>
-                </div>
-            </div>
-        `;
-        return section;
+                <form onsubmit="app.submitReport(event, 'missing')" style="margin-top: 2rem;">
+                    <div class="form-group"><label>Name *</label><input type="text" name="name" required></div>
+                    <div class="form-group"><label>Police Case Number (Optional)</label><input type="text" name="police_case"></div>
+                    <div class="form-group"><label>WhatsApp Number (Optional)</label><input type="tel" name="phone"></div>
+                    <div class="form-group"><label>Description *</label><textarea name="desc" required></textarea></div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">${this.user?.role === 'admin' ? 'Publish Now' : 'Submit for Approval'}</button>
+                </form>
+            </div>`;
+        return container;
     }
 
     renderReportFound() {
-        const section = document.createElement('section');
-        section.innerHTML = `
-            <div class="container">
+        const container = document.createElement('div');
+        container.className = 'container';
+        container.innerHTML = `
+            <div class="card" style="max-width: 600px; margin: 2rem auto;">
                 <h2>Report Found Person</h2>
-                <div class="card" style="max-width: 600px; margin: 2rem auto;">
-                    <form onsubmit="app.submitReport(event, 'found')">
-                        <div class="form-group"><label>Description *</label><textarea name="description" required></textarea></div>
-                        <div class="form-group"><label>Current Location *</label><input type="text" name="currentLocation" required></div>
-                        <div class="form-group"><label>State *</label><select name="state" required><option value="Lagos">Lagos</option><option value="Ogun">Ogun</option></select></div>
-                        <div class="form-group"><label>Your WhatsApp Number *</label><input type="tel" name="phoneNumber" required></div>
-                        <button type="submit" class="btn btn-primary" style="width: 100%;">${this.user?.role === 'admin' ? 'Publish Immediately' : 'Submit for Approval'}</button>
-                    </form>
-                </div>
-            </div>
-        `;
-        return section;
+                <form onsubmit="app.submitReport(event, 'found')" style="margin-top: 2rem;">
+                    <div class="form-group"><label>Description *</label><textarea name="desc" required></textarea></div>
+                    <div class="form-group"><label>WhatsApp Number (Optional)</label><input type="tel" name="phone"></div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">${this.user?.role === 'admin' ? 'Publish Now' : 'Submit for Approval'}</button>
+                </form>
+            </div>`;
+        return container;
     }
 
-    submitReport(event, type) {
-        event.preventDefault();
-        const formData = new FormData(event.target);
-        const report = {
+    submitReport(e, type) {
+        e.preventDefault();
+        const f = e.target;
+        const r = {
             id: Date.now(),
-            type: type,
-            name: formData.get('name') || 'Unidentified Person',
-            age: formData.get('age') || 'Unknown',
-            gender: formData.get('gender') || 'Unknown',
-            state: formData.get('state'),
-            lastSeenLocation: formData.get('lastSeenLocation'),
-            currentLocation: formData.get('currentLocation'),
-            description: formData.get('description'),
-            phoneNumber: formData.get('phoneNumber'),
-            reporterPhone: formData.get('phoneNumber'),
-            identified: false
+            type,
+            name: f.name?.value || 'Unidentified',
+            description: f.desc.value,
+            phoneNumber: f.phone?.value || null,
+            reporterPhone: f.phone?.value || null,
+            police_case: f.police_case?.value || null,
+            date: new Date().toISOString().split('T')[0]
         };
-
         if (this.user?.role === 'admin') {
-            if (type === 'missing') this.dummyMissing.unshift(report);
-            else this.dummyFound.unshift(report);
-            alert('Report published immediately!');
-        } else {
-            this.pendingReports.push(report);
-            alert('Report submitted! It will appear once an admin approves it.');
-        }
-        
-        this.saveData();
-        this.navigate(type === 'missing' ? 'missing-persons' : 'found-persons');
+            if (type === 'missing') this.dummyMissing.unshift(r);
+            else this.dummyFound.unshift(r);
+        } else this.pendingReports.push(r);
+        this.saveData(); this.navigate(type === 'missing' ? 'missing-persons' : 'found-persons');
     }
 
     createFooter() {
-        const footer = document.createElement('footer');
-        footer.innerHTML = `<div class="container" style="text-align: center;"><p>&copy; 2026 FindOurOwn. All rights reserved.</p></div>`;
-        return footer;
+        const f = document.createElement('footer');
+        f.innerHTML = `<div class="container" style="text-align: center; padding: 2rem 0; border-top: 1px solid #eee;">© 2026 FindOurOwn. Presentation Date: June 8, 2026 (Monday)</div>`;
+        return f;
     }
 }
 
