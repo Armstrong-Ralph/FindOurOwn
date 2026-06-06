@@ -148,6 +148,8 @@ class FindOurOwnApp {
             default: content = this.renderHome();
         }
         
+        if (!content) content = this.renderHome();
+        
         app.appendChild(content);
         app.appendChild(this.createFooter());
         if (this.currentPage === 'login' && this.loginType && this.loginType !== 'admin') this.initGoogleSignIn();
@@ -258,27 +260,104 @@ class FindOurOwnApp {
         const container = document.createElement('div');
         container.className = 'container';
         const role = this.user.role;
+        const myCases = this.assignedCases[this.user.email] || [];
         
         container.innerHTML = `
             <div style="margin: 2rem 0;">
                 <h2>Welcome, ${this.user.name}</h2>
                 <span class="badge" style="background: #eee; padding: 4px 12px; border-radius: 20px;">Role: ${role.toUpperCase()}</span>
             </div>
+            
+            ${role === 'volunteer' ? `
+                <div class="card" style="margin-bottom: 2rem;">
+                    <h3>Volunteer Statistics</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: bold;">${myCases.length}</div>
+                            <div style="font-size: 0.8rem; color: #666;">Active Cases</div>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: bold;">0</div>
+                            <div style="font-size: 0.8rem; color: #666;">Resolved</div>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
+
             <div class="card">
                 <h3>Quick Actions</h3>
                 <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem;">
                     ${role === 'admin' ? `
-                        <button class="btn btn-primary" onclick="app.navigate('admin')">Approve Reports</button>
-                        <button class="btn btn-secondary" onclick="app.navigate('admin')">Approve Volunteers</button>
-                        <button class="btn btn-accent" onclick="app.navigate('admin')">Manage Admins</button>
+                        <button class="btn btn-primary" onclick="app.navigate('admin')">Admin Panel</button>
+                    ` : role === 'volunteer' ? `
+                        <button class="btn btn-primary" onclick="app.navigate('missing-persons')">Find New Cases</button>
+                        <button class="btn btn-secondary" onclick="app.navigate('report-found')">Report Found Person</button>
                     ` : `
                         <button class="btn btn-primary" onclick="app.navigate('report-missing')">Report Missing</button>
                         <button class="btn btn-secondary" onclick="app.navigate('report-found')">Report Found</button>
                     `}
                 </div>
             </div>
+
+            ${role === 'volunteer' && myCases.length > 0 ? `
+                <div style="margin-top: 2rem;">
+                    <h3>Your Active Cases</h3>
+                    <div class="gallery" style="margin-top: 1rem;">
+                        ${myCases.map(id => {
+                            const p = this.dummyMissing.find(m => m.id === id) || this.dummyFound.find(f => f.id === id);
+                            return p ? `
+                                <div class="gallery-item">
+                                    <div class="gallery-content">
+                                        <h4>${p.name || 'Unidentified'}</h4>
+                                        <button class="btn btn-sm btn-accent" onclick="app.contactReporter('${p.phoneNumber || p.reporterPhone}')">Send Update</button>
+                                    </div>
+                                </div>
+                            ` : '';
+                        }).join('')}
+                    </div>
+                </div>
+            ` : ''}
         `;
         return container;
+    }
+
+    renderVolunteer() {
+        const container = document.createElement('div');
+        container.className = 'container';
+        const isVolunteer = this.volunteers.find(v => v.email === this.user?.email);
+        
+        if (isVolunteer) {
+            container.innerHTML = `
+                <div class="card" style="max-width: 500px; margin: 4rem auto; text-align: center;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">${isVolunteer.status === 'approved' ? '✅' : '⏳'}</div>
+                    <h3>Status: ${isVolunteer.status.toUpperCase()}</h3>
+                    <p style="margin-top: 1rem;">${isVolunteer.status === 'approved' ? 'You are an approved volunteer! Go to your dashboard to pick cases.' : 'Your application is being reviewed by an admin.'}</p>
+                    <button class="btn btn-primary" onclick="app.navigate('dashboard')" style="margin-top: 1.5rem; width: 100%;">Go to Dashboard</button>
+                </div>`;
+        } else {
+            container.innerHTML = `
+                <div class="card" style="max-width: 500px; margin: 2rem auto;">
+                    <h2>Become a Volunteer</h2>
+                    <form onsubmit="app.submitVolunteer(event)" style="margin-top: 2rem;">
+                        <div class="form-group"><label>Full Name *</label><input type="text" name="name" value="${this.user?.name || ''}" required></div>
+                        <div class="form-group"><label>Email *</label><input type="email" name="email" value="${this.user?.email || ''}" required></div>
+                        <div class="form-group"><label>WhatsApp Number *</label><input type="tel" name="phone" required></div>
+                        <div class="form-group"><label>State *</label><select name="state" required><option value="Lagos">Lagos</option><option value="Ogun">Ogun</option></select></div>
+                        <div class="form-group"><label>Why do you want to help? *</label><textarea name="reason" required></textarea></div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Application</button>
+                    </form>
+                </div>`;
+        }
+        return container;
+    }
+
+    submitVolunteer(e) {
+        e.preventDefault();
+        const f = new FormData(e.target);
+        const email = f.get('email');
+        if (this.volunteers.find(v => v.email === email)) return alert('Already applied');
+        this.volunteers.push({ name: f.get('name'), email, phone: f.get('phone'), state: f.get('state'), reason: f.get('reason'), status: 'pending' });
+        this.saveData(); alert('Application Submitted!'); this.render();
     }
 
     renderAdmin() {
