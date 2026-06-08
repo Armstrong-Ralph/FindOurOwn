@@ -115,6 +115,7 @@ class FindOurOwnApp {
             case 'admin': content = this.renderAdmin(); break;
             case 'volunteer': content = this.renderVolunteer(); break;
             case 'profile': content = this.renderProfile(); break;
+            case 'signup': content = this.renderSignup(); break;
             default: content = this.renderHome();
         }
         
@@ -178,6 +179,7 @@ class FindOurOwnApp {
                         <button class="btn btn-secondary" onclick="app.setLoginType('volunteer')">Login as Volunteer</button>
                         <button class="btn btn-accent" onclick="app.setLoginType('admin')">Login as Admin</button>
                     </div>
+                    <p style="margin-top: 2rem;">Don't have an account? <a href="javascript:void(0)" onclick="app.navigate('signup')">Sign Up</a></p>
                 </div>`;
         } else {
             container.innerHTML = `
@@ -189,10 +191,48 @@ class FindOurOwnApp {
                         <div class="form-group"><label>Password</label><input type="password" name="password" required></div>
                         <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
                     </form>
-                    ${this.loginType !== 'admin' ? `<div style="margin: 2rem 0; text-align: center;">OR</div><div id="google-signin-button" style="display: flex; justify-content: center;"></div>` : ''}
+                    ${this.loginType !== 'admin' ? `
+                        <div style="margin: 2rem 0; text-align: center;">OR</div>
+                        <div id="google-signin-button" style="display: flex; justify-content: center;"></div>
+                        <p style="margin-top: 2rem; text-align: center;">Don't have an account? <a href="javascript:void(0)" onclick="app.navigate('signup')">Sign Up</a></p>
+                    ` : ''}
                 </div>`;
         }
         return container;
+    }
+
+    renderSignup() {
+        const container = document.createElement('div');
+        container.className = 'container';
+        container.innerHTML = `
+            <div class="card" style="max-width: 500px; margin: 4rem auto;">
+                <h2 style="text-align: center;">Create an Account</h2>
+                <form onsubmit="app.handleSignup(event)" style="margin-top: 2rem;">
+                    <div class="form-group"><label>Full Name</label><input type="text" name="name" required></div>
+                    <div class="form-group"><label>Email</label><input type="email" name="email" required></div>
+                    <div class="form-group"><label>Password</label><input type="password" name="password" required></div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Sign Up</button>
+                </form>
+                <div style="margin: 2rem 0; text-align: center;">OR</div>
+                <div id="google-signup-button" style="display: flex; justify-content: center;"></div>
+                <p style="margin-top: 2rem; text-align: center;">Already have an account? <a href="javascript:void(0)" onclick="app.navigate('login')">Login</a></p>
+            </div>`;
+        setTimeout(() => this.initGoogleSignIn('google-signup-button'), 100);
+        return container;
+    }
+
+    handleSignup(e) {
+        e.preventDefault();
+        const f = e.target;
+        const email = f.email.value;
+        if (this.accounts.find(a => a.email === email)) return alert('Account already exists');
+        
+        const newAcc = { name: f.name.value, email, password: f.password.value, role: 'user' };
+        this.accounts.push(newAcc);
+        this.user = newAcc;
+        this.saveData();
+        alert('Account Created Successfully!');
+        this.navigate('dashboard');
     }
 
     setLoginType(t) { this.loginType = t; this.render(); }
@@ -206,30 +246,41 @@ class FindOurOwnApp {
             const admin = this.admins.find(a => a.email === email && a.password === password);
             if (admin) { 
                 this.user = { ...admin, role: 'admin' }; 
-                this.saveData(); // Save session immediately
+                this.saveData();
                 this.navigate('dashboard'); 
             }
             else alert('Invalid Admin Credentials');
         } else {
             const acc = this.accounts.find(a => a.email === email && a.password === password);
-            if (acc && acc.role === this.loginType) { 
-                this.user = acc; 
-                this.saveData(); // Save session immediately
-                this.navigate('dashboard'); 
+            if (acc) {
+                // If logging in as volunteer, check if they have a volunteer application
+                if (this.loginType === 'volunteer') {
+                    this.user = { ...acc, role: 'volunteer' };
+                } else {
+                    this.user = { ...acc, role: 'user' };
+                }
+                this.saveData();
+                this.navigate('dashboard');
+            } else {
+                alert('Invalid Credentials');
             }
-            else alert('Invalid Credentials for this role');
         }
     }
 
-    initGoogleSignIn() {
+    initGoogleSignIn(targetId = 'google-signin-button') {
         if (typeof google !== 'undefined') {
             google.accounts.id.initialize({ client_id: this.googleClientId, callback: (r) => {
                 const p = JSON.parse(atob(r.credential.split('.')[1]));
                 this.user = { email: p.email, name: p.name, role: this.loginType || 'user', picture: p.picture };
+                // Add to accounts if not exists
+                if (!this.accounts.find(a => a.email === p.email)) {
+                    this.accounts.push({ email: p.email, name: p.name, role: 'user' });
+                }
                 this.saveData(); this.navigate('dashboard');
             }});
-            google.accounts.id.renderButton(document.getElementById("google-signin-button"), { theme: "outline", size: "large", width: "100%" });
-        } else setTimeout(() => this.initGoogleSignIn(), 100);
+            const target = document.getElementById(targetId);
+            if (target) google.accounts.id.renderButton(target, { theme: 'outline', size: 'large' });
+        } else setTimeout(() => this.initGoogleSignIn(targetId), 100);
     }
 
     logout() { this.user = null; this.loginType = null; this.saveData(); this.navigate('home'); }
@@ -366,6 +417,7 @@ class FindOurOwnApp {
                                 <strong>${v.name}</strong> (${v.email})<br>${v.reason}
                                 <div style="margin-top: 0.5rem;">
                                     <button class="btn btn-sm btn-primary" onclick="app.approveVolunteer('${v.email}')">Approve</button>
+                                    <button class="btn btn-sm btn-accent" onclick="app.rejectVolunteer('${v.email}')">Reject</button>
                                 </div>
                             </div>
                         `).join('') || '<p>No pending applications.</p>'}
@@ -416,6 +468,11 @@ class FindOurOwnApp {
     approveVolunteer(email) {
         const v = this.volunteers.find(v => v.email === email);
         if (v) v.status = 'approved';
+        this.saveData(); this.render();
+    }
+
+    rejectVolunteer(email) {
+        this.volunteers = this.volunteers.filter(v => v.email !== email);
         this.saveData(); this.render();
     }
 
