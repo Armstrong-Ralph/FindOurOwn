@@ -1,40 +1,51 @@
-// FindOurOwn - Comprehensive Platform Update
+// FindOurOwn - Comprehensive Update
 class FindOurOwnApp {
     constructor() {
         this.currentPage = 'home';
-        this.user = null;
         this.loginType = null;
+        this.user = null;
+        this.mobileMenuOpen = false;
+        this.logoutMessage = false;
         this.googleClientId = '139219211717-ung2bd9htrvq7afu8drjlffv78usi74s.apps.googleusercontent.com';
         this.adminEmail = 'olaribigbea0389@student.babcock.edu.ng';
-        this.adminWhatsApp = '2347076864421';
-        
-        // Data Storage
+
+        this.initData();
+        this.init();
+    }
+
+    initData() {
+        // Core Storage
         const savedMissing = localStorage.getItem('findourown_missing');
         const savedFound = localStorage.getItem('findourown_found');
         const savedPending = localStorage.getItem('findourown_pending');
         const savedVolunteers = localStorage.getItem('findourown_volunteers');
-        const savedAccounts = localStorage.getItem('findourown_accounts');
-        const savedAdmins = localStorage.getItem('findourown_admins');
         const savedAssignedCases = localStorage.getItem('findourown_assigned_cases');
+        const savedAdmins = localStorage.getItem('findourown_admins');
         const savedUser = localStorage.getItem('findourown_user');
 
+        // Accounts & Roles
+        this.admins = savedAdmins ? JSON.parse(savedAdmins) : [
+            { email: 'admin@findourown.org', password: 'password123', name: 'Primary Admin' }
+        ];
+
+        this.accounts = [
+            { email: 'user@findourown.org', password: 'password123', name: 'Standard User', role: 'user' },
+            { email: 'volunteer@findourown.org', password: 'password123', name: 'Active Volunteer', role: 'volunteer' }
+        ];
+
+        // People Data
         this.dummyMissing = savedMissing ? JSON.parse(savedMissing) : [
-            { id: 1, name: 'Tunde Bakare', age: 24, gender: 'Male', state: 'Lagos', lastSeenLocation: 'Ikeja', description: 'Wearing a blue shirt and black trousers.', phoneNumber: '2348012345678', showPhone: true, date: '2026-06-01' },
-            { id: 2, name: 'Chidi Okafor', age: 31, gender: 'Male', state: 'Ogun', lastSeenLocation: 'Abeokuta', description: 'Last seen at the local market.', phoneNumber: '2348098765432', showPhone: false, date: '2026-06-02' }
+            { id: 1, name: 'Chidi Okafor', age: 12, gender: 'Male', state: 'Lagos', lastSeenLocation: 'Ikeja Along', description: 'Last seen wearing a blue school uniform.', phoneNumber: '2348012345678', date: '2026-06-01' },
+            { id: 2, name: 'Amina Bello', age: 24, gender: 'Female', state: 'Ogun', lastSeenLocation: 'Mowe Bus Stop', description: 'Fair complexion, wearing a green hijab.', phoneNumber: '2348123456789', date: '2026-06-02' }
         ];
+
         this.dummyFound = savedFound ? JSON.parse(savedFound) : [
-            { id: 101, identified: true, description: 'Found at Ojodu Berger. Reunited with family.', state: 'Lagos', reporterPhone: '2347011223344', date: '2026-06-01' }
+            { id: 101, description: 'Young boy found near Ojota.', currentLocation: 'Ojota Police Station', state: 'Lagos', identified: false, reporterPhone: '2348011112222', date: '2026-06-01' }
         ];
+
         this.pendingReports = savedPending ? JSON.parse(savedPending) : [];
         this.volunteers = savedVolunteers ? JSON.parse(savedVolunteers) : [
-            { name: 'Active Volunteer', email: 'volunteer@findourown.org', phone: '2348000000000', state: 'Lagos', address: '123 Ikeja Way', status: 'approved' }
-        ];
-        this.accounts = savedAccounts ? JSON.parse(savedAccounts) : [
-            { name: 'Demo User', email: 'user@findourown.org', password: 'password123', role: 'user' },
-            { name: 'Demo Volunteer', email: 'volunteer@findourown.org', password: 'password123', role: 'volunteer' }
-        ];
-        this.admins = savedAdmins ? JSON.parse(savedAdmins) : [
-            { email: 'admin@findourown.org', password: 'password123', name: 'Main Admin' }
+            { name: 'Active Volunteer', email: 'volunteer@findourown.org', phone: '2348000000000', state: 'Lagos', status: 'approved' }
         ];
         this.assignedCases = savedAssignedCases ? JSON.parse(savedAssignedCases) : {};
 
@@ -44,42 +55,46 @@ class FindOurOwnApp {
             const hash = window.location.hash.replace('#/', '');
             this.currentPage = hash || 'dashboard';
         }
-        
-        this.init();
-    }
-
-    init() {
-        this.setupTouchHandlers();
-        this.render();
-    }
-
-    setupTouchHandlers() {
-        document.addEventListener('touchstart', (e) => {
-            const btn = e.target.closest('.btn');
-            if (btn) btn.style.transform = 'scale(0.96)';
-        }, { passive: true });
-        
-        document.addEventListener('touchend', (e) => {
-            const btn = e.target.closest('.btn');
-            if (btn) btn.style.transform = 'scale(1)';
-        }, { passive: true });
     }
 
     saveData() {
+        if (this.user) localStorage.setItem('findourown_user', JSON.stringify(this.user));
+        else localStorage.removeItem('findourown_user');
+
+        localStorage.setItem('findourown_admins', JSON.stringify(this.admins));
         localStorage.setItem('findourown_missing', JSON.stringify(this.dummyMissing));
         localStorage.setItem('findourown_found', JSON.stringify(this.dummyFound));
         localStorage.setItem('findourown_pending', JSON.stringify(this.pendingReports));
         localStorage.setItem('findourown_volunteers', JSON.stringify(this.volunteers));
-        localStorage.setItem('findourown_accounts', JSON.stringify(this.accounts));
-        localStorage.setItem('findourown_admins', JSON.stringify(this.admins));
         localStorage.setItem('findourown_assigned_cases', JSON.stringify(this.assignedCases));
-        if (this.user) localStorage.setItem('findourown_user', JSON.stringify(this.user));
-        else localStorage.removeItem('findourown_user');
+    }
+
+    init() {
+        this.setupViewport();
+        this.setupRouting();
+        this.render();
+    }
+
+    setupViewport() {
+        let viewport = document.querySelector('meta[name="viewport"]');
+        if (!viewport) {
+            viewport = document.createElement('meta');
+            viewport.name = 'viewport';
+            document.head.appendChild(viewport);
+        }
+        viewport.content = 'width=device-width, initial-scale=1.0, viewport-fit=cover';
+    }
+
+    setupRouting() {
+        window.addEventListener('popstate', () => this.render());
     }
 
     navigate(page) {
         this.currentPage = page;
-        window.location.hash = `/${page}`;
+        this.mobileMenuOpen = false;
+        if (page !== 'login') this.loginType = null;
+        window.history.pushState({ page }, '', '#/' + page);
+        this.saveData();
         this.render();
     }
 
@@ -92,7 +107,6 @@ class FindOurOwnApp {
         switch(this.currentPage) {
             case 'home': content = this.renderHome(); break;
             case 'login': content = this.renderLogin(); break;
-            case 'signup': content = this.renderSignup(); break;
             case 'report-missing': content = this.renderReportMissing(); break;
             case 'report-found': content = this.renderReportFound(); break;
             case 'missing-persons': content = this.renderMissingPersons(); break;
@@ -105,53 +119,47 @@ class FindOurOwnApp {
         }
         
         if (!content) content = this.renderHome();
+        
         app.appendChild(content);
         app.appendChild(this.createFooter());
-        
         if (this.currentPage === 'login' && this.loginType && this.loginType !== 'admin') this.initGoogleSignIn();
-        if (this.currentPage === 'signup') this.initGoogleSignIn('google-signup-button');
+        window.scrollTo(0, 0);
     }
 
     createNav() {
         const nav = document.createElement('nav');
+        const links = [{ name: 'Home', page: 'home' }, { name: 'Missing', page: 'missing-persons' }, { name: 'Found', page: 'found-persons' }, { name: 'Report', page: 'report-missing' }];
+        if (this.user) {
+            links.push({ name: 'Dashboard', page: 'dashboard' });
+            if (this.user.role === 'admin') links.push({ name: 'Admin', page: 'admin' });
+            links.push({ name: 'Profile', page: 'profile' });
+        }
         nav.innerHTML = `
-            <div class="container" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0;">
-                <a href="javascript:void(0)" class="logo" onclick="app.navigate('home')" style="font-weight: bold; font-size: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                    <span style="color: #e63946;">❤️</span> FindOurOwn
-                </a>
-                <div class="nav-links" style="display: flex; gap: 1rem; align-items: center;">
-                    <a href="javascript:void(0)" onclick="app.navigate('home')">Home</a>
-                    <a href="javascript:void(0)" onclick="app.navigate('missing-persons')">Missing</a>
-                    <a href="javascript:void(0)" onclick="app.navigate('found-persons')">Found</a>
-                    ${this.user ? `
-                        <a href="javascript:void(0)" onclick="app.navigate('dashboard')">Dashboard</a>
-                        ${this.user.role === 'admin' ? `<a href="javascript:void(0)" onclick="app.navigate('admin')">Admin</a>` : ''}
-                        <button class="btn btn-sm btn-accent" onclick="app.logout()">Logout</button>
-                    ` : `
-                        <button class="btn btn-sm btn-primary" onclick="app.navigate('login')">Login</button>
-                    `}
-                </div>
+            <div class="container">
+                <a href="#" class="logo" onclick="app.navigate('home'); return false;">❤️ FindOurOwn</a>
+                <ul class="nav-links ${this.mobileMenuOpen ? 'active' : ''}">
+                    ${links.map(l => `<li><a href="#" onclick="app.navigate('${l.page}'); return false;">${l.name}</a></li>`).join('')}
+                    ${this.user ? `<li><a href="#" onclick="app.logout(); return false;">Logout</a></li>` : `<li><a href="#" onclick="app.navigate('login'); return false;" class="btn btn-primary">Login</a></li>`}
+                </ul>
+                <div class="mobile-toggle" onclick="app.toggleMobileMenu()"><span></span><span></span><span></span></div>
             </div>
         `;
         return nav;
     }
 
+    toggleMobileMenu() { this.mobileMenuOpen = !this.mobileMenuOpen; this.render(); }
+
     renderHome() {
         const section = document.createElement('section');
         section.className = 'hero';
         section.innerHTML = `
-            <div class="container" style="text-align: center; padding: 4rem 0;">
-                <h1>Reuniting Families, Restoring Hope</h1>
-                <p style="margin: 1.5rem 0; font-size: 1.2rem; color: #666;">A trusted platform for Lagos and Ogun States.</p>
-                <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+            <div class="container">
+                <h1>FindOurOwn</h1>
+                <p>Reuniting families across Lagos and Ogun. Presentation Ready for Monday.</p>
+                <div class="hero-buttons" style="display: flex; flex-direction: column; gap: 1rem; max-width: 300px; margin: 2rem auto;">
                     <button class="btn btn-primary" onclick="app.navigate('report-missing')">Report Missing</button>
                     <button class="btn btn-secondary" onclick="app.navigate('report-found')">Report Found</button>
                     <button class="btn btn-accent" onclick="app.navigate('volunteer')">Join as Volunteer</button>
-                </div>
-                <div class="stats" style="display: flex; justify-content: center; gap: 3rem; margin-top: 4rem;">
-                    <div><div style="font-size: 2rem; font-weight: bold;">${this.dummyMissing.length + this.dummyFound.length}</div><div>Reports</div></div>
-                    <div><div style="font-size: 2rem; font-weight: bold;">${this.volunteers.length}</div><div>Volunteers</div></div>
-                    <div><div style="font-size: 2rem; font-weight: bold;">2</div><div>States</div></div>
                 </div>
             </div>
         `;
@@ -170,7 +178,6 @@ class FindOurOwnApp {
                         <button class="btn btn-secondary" onclick="app.setLoginType('volunteer')">Login as Volunteer</button>
                         <button class="btn btn-accent" onclick="app.setLoginType('admin')">Login as Admin</button>
                     </div>
-                    <p style="margin-top: 2rem;">Don't have an account? <a href="javascript:void(0)" onclick="app.navigate('signup')">Sign Up</a></p>
                 </div>`;
         } else {
             container.innerHTML = `
@@ -182,46 +189,10 @@ class FindOurOwnApp {
                         <div class="form-group"><label>Password</label><input type="password" name="password" required></div>
                         <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
                     </form>
-                    ${this.loginType !== 'admin' ? `
-                        <div style="margin: 2rem 0; text-align: center;">OR</div>
-                        <div id="google-signin-button" style="display: flex; justify-content: center;"></div>
-                        <p style="margin-top: 2rem; text-align: center;">Don't have an account? <a href="javascript:void(0)" onclick="app.navigate('signup')">Sign Up</a></p>
-                    ` : ''}
+                    ${this.loginType !== 'admin' ? `<div style="margin: 2rem 0; text-align: center;">OR</div><div id="google-signin-button" style="display: flex; justify-content: center;"></div>` : ''}
                 </div>`;
         }
         return container;
-    }
-
-    renderSignup() {
-        const container = document.createElement('div');
-        container.className = 'container';
-        container.innerHTML = `
-            <div class="card" style="max-width: 500px; margin: 4rem auto;">
-                <h2 style="text-align: center;">Create an Account</h2>
-                <form onsubmit="app.handleSignup(event)" style="margin-top: 2rem;">
-                    <div class="form-group"><label>Full Name</label><input type="text" name="name" required></div>
-                    <div class="form-group"><label>Email</label><input type="email" name="email" required></div>
-                    <div class="form-group"><label>Password</label><input type="password" name="password" required></div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">Sign Up</button>
-                </form>
-                <div style="margin: 2rem 0; text-align: center;">OR</div>
-                <div id="google-signup-button" style="display: flex; justify-content: center;"></div>
-                <p style="margin-top: 2rem; text-align: center;">Already have an account? <a href="javascript:void(0)" onclick="app.navigate('login')">Login</a></p>
-            </div>`;
-        return container;
-    }
-
-    handleSignup(e) {
-        e.preventDefault();
-        const f = e.target;
-        const email = f.email.value;
-        if (this.accounts.find(a => a.email === email)) return alert('Account already exists');
-        const newAcc = { name: f.name.value, email, password: f.password.value, role: 'user' };
-        this.accounts.push(newAcc);
-        this.user = newAcc;
-        this.saveData();
-        alert('Account Created Successfully!');
-        this.navigate('dashboard');
     }
 
     setLoginType(t) { this.loginType = t; this.render(); }
@@ -233,30 +204,32 @@ class FindOurOwnApp {
         
         if (this.loginType === 'admin') {
             const admin = this.admins.find(a => a.email === email && a.password === password);
-            if (admin) { this.user = { ...admin, role: 'admin' }; this.saveData(); this.navigate('dashboard'); }
+            if (admin) { 
+                this.user = { ...admin, role: 'admin' }; 
+                this.saveData(); // Save session immediately
+                this.navigate('dashboard'); 
+            }
             else alert('Invalid Admin Credentials');
         } else {
             const acc = this.accounts.find(a => a.email === email && a.password === password);
-            if (acc) {
-                this.user = { ...acc, role: this.loginType || 'user' };
-                this.saveData(); this.navigate('dashboard');
-            } else alert('Invalid Credentials');
+            if (acc && acc.role === this.loginType) { 
+                this.user = acc; 
+                this.saveData(); // Save session immediately
+                this.navigate('dashboard'); 
+            }
+            else alert('Invalid Credentials for this role');
         }
     }
 
-    initGoogleSignIn(targetId = 'google-signin-button') {
+    initGoogleSignIn() {
         if (typeof google !== 'undefined') {
             google.accounts.id.initialize({ client_id: this.googleClientId, callback: (r) => {
                 const p = JSON.parse(atob(r.credential.split('.')[1]));
                 this.user = { email: p.email, name: p.name, role: this.loginType || 'user', picture: p.picture };
-                if (!this.accounts.find(a => a.email === p.email)) {
-                    this.accounts.push({ email: p.email, name: p.name, role: 'user' });
-                }
                 this.saveData(); this.navigate('dashboard');
             }});
-            const target = document.getElementById(targetId);
-            if (target) google.accounts.id.renderButton(target, { theme: 'outline', size: 'large' });
-        } else setTimeout(() => this.initGoogleSignIn(targetId), 100);
+            google.accounts.id.renderButton(document.getElementById("google-signin-button"), { theme: "outline", size: "large", width: "100%" });
+        } else setTimeout(() => this.initGoogleSignIn(), 100);
     }
 
     logout() { this.user = null; this.loginType = null; this.saveData(); this.navigate('home'); }
@@ -265,19 +238,33 @@ class FindOurOwnApp {
         const container = document.createElement('div');
         container.className = 'container';
         const role = this.user.role;
-        const myReports = this.dummyMissing.filter(m => m.reporterEmail === this.user.email);
         const myCases = this.assignedCases[this.user.email] || [];
-
+        
         container.innerHTML = `
-            <div style="margin: 2rem 0; display: flex; justify-content: space-between; align-items: center;">
+            <div style="margin: 2rem 0;">
                 <h2>Welcome, ${this.user.name}</h2>
-                <button class="btn btn-sm btn-secondary" onclick="app.navigate('profile')">Edit Profile</button>
+                <span class="badge" style="background: #eee; padding: 4px 12px; border-radius: 20px;">Role: ${role.toUpperCase()}</span>
             </div>
-            <span class="badge" style="background: #eee; padding: 4px 12px; border-radius: 20px;">Role: ${role.toUpperCase()}</span>
             
-            <div class="card" style="margin-top: 2rem;">
+            ${role === 'volunteer' ? `
+                <div class="card" style="margin-bottom: 2rem;">
+                    <h3>Volunteer Statistics</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: bold;">${myCases.length}</div>
+                            <div style="font-size: 0.8rem; color: #666;">Active Cases</div>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: bold;">0</div>
+                            <div style="font-size: 0.8rem; color: #666;">Resolved</div>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
+
+            <div class="card">
                 <h3>Quick Actions</h3>
-                <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+                <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem;">
                     ${role === 'admin' ? `
                         <button class="btn btn-primary" onclick="app.navigate('admin')">Admin Panel</button>
                     ` : role === 'volunteer' ? `
@@ -290,36 +277,17 @@ class FindOurOwnApp {
                 </div>
             </div>
 
-            ${myReports.length > 0 ? `
-                <div style="margin-top: 2rem;">
-                    <h3>Your Reports</h3>
-                    <div class="gallery" style="margin-top: 1rem;">
-                        ${myReports.map(r => `
-                            <div class="gallery-item">
-                                <div class="gallery-content">
-                                    <h4>${r.name}</h4>
-                                    <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                                        <button class="btn btn-sm btn-secondary" onclick="app.editReport(${r.id})">Edit</button>
-                                        <button class="btn btn-sm btn-accent" onclick="app.deleteReport(${r.id})">Delete</button>
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            ` : ''}
-
             ${role === 'volunteer' && myCases.length > 0 ? `
                 <div style="margin-top: 2rem;">
                     <h3>Your Active Cases</h3>
                     <div class="gallery" style="margin-top: 1rem;">
                         ${myCases.map(id => {
-                            const p = this.dummyMissing.find(m => m.id === id);
+                            const p = this.dummyMissing.find(m => m.id === id) || this.dummyFound.find(f => f.id === id);
                             return p ? `
                                 <div class="gallery-item">
                                     <div class="gallery-content">
-                                        <h4>${p.name}</h4>
-                                        <button class="btn btn-sm btn-primary" onclick="app.contactReporter('${p.phoneNumber}', ${p.showPhone})">Update Family</button>
+                                        <h4>${p.name || 'Unidentified'}</h4>
+                                        <button class="btn btn-sm btn-accent" onclick="app.contactReporter('${p.phoneNumber || p.reporterPhone}')">Send Update</button>
                                     </div>
                                 </div>
                             ` : '';
@@ -329,6 +297,45 @@ class FindOurOwnApp {
             ` : ''}
         `;
         return container;
+    }
+
+    renderVolunteer() {
+        const container = document.createElement('div');
+        container.className = 'container';
+        const isVolunteer = this.volunteers.find(v => v.email === this.user?.email);
+        
+        if (isVolunteer) {
+            container.innerHTML = `
+                <div class="card" style="max-width: 500px; margin: 4rem auto; text-align: center;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">${isVolunteer.status === 'approved' ? '✅' : '⏳'}</div>
+                    <h3>Status: ${isVolunteer.status.toUpperCase()}</h3>
+                    <p style="margin-top: 1rem;">${isVolunteer.status === 'approved' ? 'You are an approved volunteer! Go to your dashboard to pick cases.' : 'Your application is being reviewed by an admin.'}</p>
+                    <button class="btn btn-primary" onclick="app.navigate('dashboard')" style="margin-top: 1.5rem; width: 100%;">Go to Dashboard</button>
+                </div>`;
+        } else {
+            container.innerHTML = `
+                <div class="card" style="max-width: 500px; margin: 2rem auto;">
+                    <h2>Become a Volunteer</h2>
+                    <form onsubmit="app.submitVolunteer(event)" style="margin-top: 2rem;">
+                        <div class="form-group"><label>Full Name *</label><input type="text" name="name" value="${this.user?.name || ''}" required></div>
+                        <div class="form-group"><label>Email *</label><input type="email" name="email" value="${this.user?.email || ''}" required></div>
+                        <div class="form-group"><label>WhatsApp Number *</label><input type="tel" name="phone" required></div>
+                        <div class="form-group"><label>State *</label><select name="state" required><option value="Lagos">Lagos</option><option value="Ogun">Ogun</option></select></div>
+                        <div class="form-group"><label>Why do you want to help? *</label><textarea name="reason" required></textarea></div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Application</button>
+                    </form>
+                </div>`;
+        }
+        return container;
+    }
+
+    submitVolunteer(e) {
+        e.preventDefault();
+        const f = new FormData(e.target);
+        const email = f.get('email');
+        if (this.volunteers.find(v => v.email === email)) return alert('Already applied');
+        this.volunteers.push({ name: f.get('name'), email, phone: f.get('phone'), state: f.get('state'), reason: f.get('reason'), status: 'pending' });
+        this.saveData(); alert('Application Submitted!'); this.render();
     }
 
     renderAdmin() {
@@ -356,10 +363,9 @@ class FindOurOwnApp {
                     <div style="margin-top: 1rem;">
                         ${this.volunteers.filter(v => v.status === 'pending').map(v => `
                             <div style="border-bottom: 1px solid #eee; padding: 1rem 0;">
-                                <strong>${v.name}</strong> (${v.email})<br>Address: ${v.address}<br>Reason: ${v.reason}
+                                <strong>${v.name}</strong> (${v.email})<br>${v.reason}
                                 <div style="margin-top: 0.5rem;">
                                     <button class="btn btn-sm btn-primary" onclick="app.approveVolunteer('${v.email}')">Approve</button>
-                                    <button class="btn btn-sm btn-accent" onclick="app.rejectVolunteer('${v.email}')">Reject</button>
                                 </div>
                             </div>
                         `).join('') || '<p>No pending applications.</p>'}
@@ -367,8 +373,8 @@ class FindOurOwnApp {
                 </div>
                 <div class="card">
                     <h3>Admin Management</h3>
-                    <form onsubmit="app.addAdmin(event)" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                        <input type="email" name="email" placeholder="Email" required style="flex: 1;">
+                    <form onsubmit="app.addAdmin(event)" style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                        <input type="email" name="email" placeholder="Admin Email" required style="flex: 1;">
                         <input type="password" name="password" placeholder="Password" required style="flex: 1;">
                         <button type="submit" class="btn btn-primary">Add Admin</button>
                     </form>
@@ -386,29 +392,6 @@ class FindOurOwnApp {
         return container;
     }
 
-    approveReport(i) {
-        const r = this.pendingReports.splice(i, 1)[0];
-        if (r.type === 'missing') this.dummyMissing.unshift(r);
-        else this.dummyFound.unshift(r);
-        this.saveData(); this.render();
-    }
-
-    rejectReport(i) {
-        this.pendingReports.splice(i, 1);
-        this.saveData(); this.render();
-    }
-
-    approveVolunteer(email) {
-        const v = this.volunteers.find(v => v.email === email);
-        if (v) v.status = 'approved';
-        this.saveData(); this.render();
-    }
-
-    rejectVolunteer(email) {
-        this.volunteers = this.volunteers.filter(v => v.email !== email);
-        this.saveData(); this.render();
-    }
-
     addAdmin(e) {
         e.preventDefault();
         const email = e.target.email.value;
@@ -423,228 +406,17 @@ class FindOurOwnApp {
         this.saveData(); this.render();
     }
 
-    renderMissingPersons() {
-        const container = document.createElement('div');
-        container.className = 'container';
-        container.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin: 2rem 0;">
-                <h2>Missing Persons</h2>
-                <div style="display: flex; gap: 0.5rem;">
-                    <select onchange="app.filterGallery('missing', this.value)" style="padding: 0.5rem; border-radius: 4px; border: 1px solid #ddd;">
-                        <option value="all">All States</option>
-                        <option value="Lagos">Lagos</option>
-                        <option value="Ogun">Ogun</option>
-                    </select>
-                </div>
-            </div>
-            <div class="gallery" id="missing-gallery">
-                ${this.renderGalleryItems(this.dummyMissing, 'missing')}
-            </div>
-        `;
-        return container;
+    approveReport(i) {
+        const r = this.pendingReports.splice(i, 1)[0];
+        if (r.type === 'missing') this.dummyMissing.unshift(r);
+        else this.dummyFound.unshift(r);
+        this.saveData(); this.render();
     }
 
-    renderFoundPersons() {
-        const container = document.createElement('div');
-        container.className = 'container';
-        container.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin: 2rem 0;">
-                <h2>Found Persons</h2>
-                <select onchange="app.filterGallery('found', this.value)" style="padding: 0.5rem; border-radius: 4px; border: 1px solid #ddd;">
-                    <option value="all">All States</option>
-                    <option value="Lagos">Lagos</option>
-                    <option value="Ogun">Ogun</option>
-                </select>
-            </div>
-            <div class="gallery" id="found-gallery">
-                ${this.renderGalleryItems(this.dummyFound, 'found')}
-            </div>
-        `;
-        return container;
-    }
-
-    renderGalleryItems(data, type) {
-        return data.map(p => `
-            <div class="gallery-item card">
-                ${p.photo ? `<img src="${p.photo}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px 8px 0 0;">` : `<div style="height: 200px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 3rem;">👤</div>`}
-                <div class="gallery-content" style="padding: 1rem;">
-                    <h3>${p.name || (p.identified ? 'Identified' : 'Unidentified')}</h3>
-                    <p>${p.description}</p>
-                    <p style="font-size: 0.8rem; color: #888; margin-top: 0.5rem;">📍 ${p.lastSeenLocation || p.state} | 📅 ${p.date}</p>
-                    <div style="margin-top: 1rem; display: grid; gap: 0.5rem;">
-                        <button class="btn btn-primary" onclick="app.contactReporter('${p.phoneNumber || p.reporterPhone}', ${p.showPhone || false})">Contact</button>
-                        ${type === 'missing' ? `
-                            <button class="btn btn-secondary" onclick="app.volunteerForCase(${p.id})">Volunteer</button>
-                            <button class="btn btn-accent" onclick="app.navigate('report-found')">I Found Them</button>
-                        ` : ''}
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    filterGallery(type, state) {
-        const data = type === 'missing' ? this.dummyMissing : this.dummyFound;
-        const filtered = state === 'all' ? data : data.filter(p => p.state === state);
-        document.getElementById(`${type}-gallery`).innerHTML = this.renderGalleryItems(filtered, type);
-    }
-
-    contactReporter(phone, showPhone) {
-        const whatsappBtn = `<button class="btn btn-primary" onclick="window.open('https://wa.me/${phone}', '_blank')">WhatsApp Reporter</button>`;
-        const adminWhatsAppBtn = `<button class="btn btn-primary" onclick="window.open('https://wa.me/${this.adminWhatsApp}', '_blank')">WhatsApp Admin</button>`;
-        const adminEmailBtn = `<button class="btn btn-secondary" onclick="window.location.href='mailto:${this.adminEmail}'">Email Admin</button>`;
-
-        const modal = document.createElement('div');
-        modal.style = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;";
-        modal.innerHTML = `
-            <div class="card" style="max-width: 400px; width: 90%; text-align: center;">
-                <h3>Contact Information</h3>
-                <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
-                    ${(showPhone && phone) ? whatsappBtn : ''}
-                    ${adminWhatsAppBtn}
-                    ${adminEmailBtn}
-                    <button class="btn btn-sm btn-accent" onclick="this.closest('div.card').parentElement.remove()">Close</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    }
-
-    renderReportMissing() {
-        const container = document.createElement('div');
-        container.className = 'container';
-        container.innerHTML = `
-            <div class="card" style="max-width: 600px; margin: 2rem auto;">
-                <h2>Report Missing Person</h2>
-                <form onsubmit="app.submitReport(event, 'missing')" style="margin-top: 2rem;">
-                    <div class="form-group"><label>Full Name *</label><input type="text" name="name" required></div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <div class="form-group"><label>Age *</label><input type="number" name="age" required></div>
-                        <div class="form-group"><label>Gender *</label><select name="gender" required><option value="Male">Male</option><option value="Female">Female</option></select></div>
-                    </div>
-                    <div class="form-group"><label>State *</label><select name="state" required><option value="Lagos">Lagos</option><option value="Ogun">Ogun</option></select></div>
-                    <div class="form-group"><label>Last Seen Location *</label><input type="text" name="location" required></div>
-                    <div class="form-group"><label>Description *</label><textarea name="desc" required></textarea></div>
-                    <div class="form-group"><label>Photo</label><input type="file" onchange="app.handleImage(event)" accept="image/*"></div>
-                    <div class="form-group"><label>WhatsApp Number</label><input type="tel" name="phone"></div>
-                    <div class="form-group"><label><input type="checkbox" name="showPhone" checked> Show my phone number publicly</label></div>
-                    <div class="form-group"><label>Police Case Number (Optional)</label><input type="text" name="police_case"></div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">${this.user?.role === 'admin' ? 'Publish Now' : 'Submit Report'}</button>
-                </form>
-            </div>`;
-        return container;
-    }
-
-    renderReportFound() {
-        const container = document.createElement('div');
-        container.className = 'container';
-        container.innerHTML = `
-            <div class="card" style="max-width: 600px; margin: 2rem auto;">
-                <h2>Report Found Person</h2>
-                <form onsubmit="app.submitReport(event, 'found')" style="margin-top: 2rem;">
-                    <div class="form-group"><label>Description *</label><textarea name="desc" required></textarea></div>
-                    <div class="form-group"><label>State *</label><select name="state" required><option value="Lagos">Lagos</option><option value="Ogun">Ogun</option></select></div>
-                    <div class="form-group"><label>Photo</label><input type="file" onchange="app.handleImage(event)" accept="image/*"></div>
-                    <div class="form-group"><label>Your WhatsApp Number</label><input type="tel" name="phone"></div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Report</button>
-                </form>
-            </div>`;
-        return container;
-    }
-
-    handleImage(e) {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onloadend = () => { this.lastUploadedImage = reader.result; };
-        if (file) reader.readAsDataURL(file);
-    }
-
-    submitReport(e, type) {
-        e.preventDefault();
-        const f = e.target;
-        const r = {
-            id: Date.now(),
-            type,
-            name: f.name?.value || 'Unidentified',
-            age: f.age?.value || null,
-            gender: f.gender?.value || null,
-            state: f.state.value,
-            lastSeenLocation: f.location?.value || f.state.value,
-            description: f.desc.value,
-            phoneNumber: f.phone?.value || null,
-            reporterPhone: f.phone?.value || null,
-            showPhone: f.showPhone?.checked || false,
-            police_case: f.police_case?.value || null,
-            photo: this.lastUploadedImage || null,
-            reporterEmail: this.user?.email || null,
-            date: new Date().toISOString().split('T')[0]
-        };
-        if (this.user?.role === 'admin') {
-            if (type === 'missing') this.dummyMissing.unshift(r);
-            else this.dummyFound.unshift(r);
-        } else this.pendingReports.push(r);
-        this.saveData(); this.navigate(type === 'missing' ? 'missing-persons' : 'found-persons');
-    }
-
-    deleteReport(id) {
-        if (confirm('Delete this report?')) {
-            this.dummyMissing = this.dummyMissing.filter(m => m.id !== id);
-            this.dummyFound = this.dummyFound.filter(f => f.id !== id);
-            this.saveData(); this.render();
-        }
-    }
-
-    renderVolunteer() {
-        const container = document.createElement('div');
-        container.className = 'container';
-        const isVolunteer = this.volunteers.find(v => v.email === this.user?.email);
-        
-        if (isVolunteer) {
-            container.innerHTML = `
-                <div class="card" style="max-width: 500px; margin: 4rem auto; text-align: center;">
-                    <div style="font-size: 3rem;">${isVolunteer.status === 'approved' ? '✅' : '⏳'}</div>
-                    <h3>Status: ${isVolunteer.status.toUpperCase()}</h3>
-                    <p style="margin-top: 1rem;">${isVolunteer.status === 'approved' ? 'You are an approved volunteer!' : 'Your application is pending review.'}</p>
-                    <button class="btn btn-primary" onclick="app.navigate('dashboard')" style="margin-top: 1rem; width: 100%;">Go to Dashboard</button>
-                </div>`;
-        } else {
-            container.innerHTML = `
-                <div class="card" style="max-width: 500px; margin: 2rem auto;">
-                    <h2>Volunteer Application</h2>
-                    <form onsubmit="app.submitVolunteer(event)" style="margin-top: 2rem;">
-                        <div class="form-group"><label>Full Name</label><input type="text" name="name" value="${this.user?.name || ''}" required></div>
-                        <div class="form-group"><label>Email</label><input type="email" name="email" value="${this.user?.email || ''}" required></div>
-                        <div class="form-group"><label>Residency Address *</label><input type="text" name="address" required placeholder="Full home address"></div>
-                        <div class="form-group"><label>WhatsApp Number</label><input type="tel" name="phone" required></div>
-                        <div class="form-group"><label>Why do you want to help?</label><textarea name="reason" required></textarea></div>
-                        <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Application</button>
-                    </form>
-                </div>`;
-        }
-        return container;
-    }
-
-    submitVolunteer(e) {
-        e.preventDefault();
-        const f = e.target;
-        this.volunteers.push({ name: f.name.value, email: f.email.value, address: f.address.value, phone: f.phone.value, reason: f.reason.value, status: 'pending' });
-        this.saveData(); alert('Application Submitted!'); this.navigate('dashboard');
-    }
-
-    volunteerForCase(id) {
-        if (!this.user) return this.navigate('login');
-        if (this.user.role !== 'volunteer') {
-            if (confirm('Only volunteers can pick cases. Become a volunteer?')) this.navigate('volunteer');
-            return;
-        }
-        const v = this.volunteers.find(v => v.email === this.user.email);
-        if (!v || v.status !== 'approved') return alert('Your volunteer application is still pending approval.');
-        
-        if (!this.assignedCases[this.user.email]) this.assignedCases[this.user.email] = [];
-        if (!this.assignedCases[this.user.email].includes(id)) {
-            this.assignedCases[this.user.email].push(id);
-            this.saveData(); alert('Case assigned!'); this.render();
-        }
+    approveVolunteer(email) {
+        const v = this.volunteers.find(v => v.email === email);
+        if (v) v.status = 'approved';
+        this.saveData(); this.render();
     }
 
     renderProfile() {
@@ -666,43 +438,139 @@ class FindOurOwnApp {
     updateProfile(e) {
         e.preventDefault();
         this.user.name = e.target.name.value;
+        
+        // Also update the account in the persistent accounts list if it exists
         const acc = this.accounts.find(a => a.email === this.user.email);
         if (acc) acc.name = this.user.name;
-        this.saveData(); alert('Profile Updated!'); this.render();
+        
+        const admin = this.admins.find(a => a.email === this.user.email);
+        if (admin) admin.name = this.user.name;
+
+        this.saveData(); 
+        alert('Profile Updated!'); 
+        this.render();
+    }
+
+    renderMissingPersons() {
+        const container = document.createElement('div');
+        container.className = 'container';
+        container.innerHTML = `<h2>Missing Persons</h2><div class="gallery">${this.dummyMissing.map(p => `
+            <div class="gallery-item">
+                <div style="height: 150px; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 3rem;">👤</div>
+                <div class="gallery-content">
+                    <h3>${p.name}</h3>
+                    <p>${p.description}</p>
+                    <div style="margin-top: 1rem; display: grid; gap: 0.5rem;">
+                        <button class="btn btn-primary" onclick="app.contactReporter('${p.phoneNumber}')">Contact Reporter</button>
+                        <button class="btn btn-secondary" onclick="app.volunteerForCase(${p.id})">Volunteer for Case</button>
+                        <button class="btn btn-accent" onclick="app.iFoundThisPerson(${p.id})">I Found This Person</button>
+                    </div>
+                </div>
+            </div>
+        `).join('')}</div>`;
+        return container;
+    }
+
+    renderFoundPersons() {
+        const container = document.createElement('div');
+        container.className = 'container';
+        container.innerHTML = `<h2>Found Persons</h2><div class="gallery">${this.dummyFound.map(p => `
+            <div class="gallery-item">
+                <div style="height: 150px; background: #e8f4fd; display: flex; align-items: center; justify-content: center; font-size: 3rem;">🔍</div>
+                <div class="gallery-content">
+                    <h3>${p.identified ? 'Identified' : 'Unidentified'}</h3>
+                    <p>${p.description}</p>
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="app.contactReporter('${p.reporterPhone}')">Contact Finder</button>
+                </div>
+            </div>
+        `).join('')}</div>`;
+        return container;
+    }
+
+    contactReporter(phone) {
+        if (!phone || phone === 'null') {
+            window.location.href = `mailto:${this.adminEmail}?subject=Inquiry regarding a case`;
+        } else {
+            window.open(`https://wa.me/${phone.replace(/\D/g, '')}`, '_blank');
+        }
+    }
+
+    volunteerForCase(id) {
+        if (!this.user) return this.navigate('login');
+        if (this.user.role !== 'volunteer') {
+            if (confirm('Only volunteers can pick cases. Would you like to become a volunteer?')) {
+                this.navigate('volunteer');
+            }
+            return;
+        }
+        const v = this.volunteers.find(v => v.email === this.user.email);
+        if (!v || v.status !== 'approved') return this.navigate('volunteer');
+        
+        if (!this.assignedCases[this.user.email]) this.assignedCases[this.user.email] = [];
+        if (!this.assignedCases[this.user.email].includes(id)) this.assignedCases[this.user.email].push(id);
+        this.saveData(); alert('Case assigned to you!'); this.render();
+    }
+
+    iFoundThisPerson(id) {
+        alert('Thank you! Please fill out the "Report Found" form to provide details.');
+        this.navigate('report-found');
+    }
+
+    renderReportMissing() {
+        const container = document.createElement('div');
+        container.className = 'container';
+        container.innerHTML = `
+            <div class="card" style="max-width: 600px; margin: 2rem auto;">
+                <h2>Report Missing Person</h2>
+                <form onsubmit="app.submitReport(event, 'missing')" style="margin-top: 2rem;">
+                    <div class="form-group"><label>Name *</label><input type="text" name="name" required></div>
+                    <div class="form-group"><label>Police Case Number (Optional)</label><input type="text" name="police_case"></div>
+                    <div class="form-group"><label>WhatsApp Number (Optional)</label><input type="tel" name="phone"></div>
+                    <div class="form-group"><label>Description *</label><textarea name="desc" required></textarea></div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">${this.user?.role === 'admin' ? 'Publish Now' : 'Submit for Approval'}</button>
+                </form>
+            </div>`;
+        return container;
+    }
+
+    renderReportFound() {
+        const container = document.createElement('div');
+        container.className = 'container';
+        container.innerHTML = `
+            <div class="card" style="max-width: 600px; margin: 2rem auto;">
+                <h2>Report Found Person</h2>
+                <form onsubmit="app.submitReport(event, 'found')" style="margin-top: 2rem;">
+                    <div class="form-group"><label>Description *</label><textarea name="desc" required></textarea></div>
+                    <div class="form-group"><label>WhatsApp Number (Optional)</label><input type="tel" name="phone"></div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">${this.user?.role === 'admin' ? 'Publish Now' : 'Submit for Approval'}</button>
+                </form>
+            </div>`;
+        return container;
+    }
+
+    submitReport(e, type) {
+        e.preventDefault();
+        const f = e.target;
+        const r = {
+            id: Date.now(),
+            type,
+            name: f.name?.value || 'Unidentified',
+            description: f.desc.value,
+            phoneNumber: f.phone?.value || null,
+            reporterPhone: f.phone?.value || null,
+            police_case: f.police_case?.value || null,
+            date: new Date().toISOString().split('T')[0]
+        };
+        if (this.user?.role === 'admin') {
+            if (type === 'missing') this.dummyMissing.unshift(r);
+            else this.dummyFound.unshift(r);
+        } else this.pendingReports.push(r);
+        this.saveData(); this.navigate(type === 'missing' ? 'missing-persons' : 'found-persons');
     }
 
     createFooter() {
         const f = document.createElement('footer');
-        f.style = "background: #1d3557; color: white; padding: 4rem 0 2rem; margin-top: 4rem;";
-        f.innerHTML = `
-            <div class="container">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem;">
-                    <div>
-                        <h3>FindOurOwn</h3>
-                        <p style="opacity: 0.8; margin-top: 1rem;">Dedicated to reuniting families in Lagos and Ogun States.</p>
-                    </div>
-                    <div>
-                        <h4>Quick Links</h4>
-                        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem;">
-                            <a href="javascript:void(0)" onclick="app.navigate('missing-persons')" style="color: white; opacity: 0.8;">Missing Persons</a>
-                            <a href="javascript:void(0)" onclick="app.navigate('found-persons')" style="color: white; opacity: 0.8;">Found Persons</a>
-                            <a href="javascript:void(0)" onclick="app.navigate('volunteer')" style="color: white; opacity: 0.8;">Volunteer</a>
-                        </div>
-                    </div>
-                    <div>
-                        <h4>Support</h4>
-                        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem;">
-                            <a href="mailto:${this.adminEmail}" style="color: white; opacity: 0.8;">Contact Us</a>
-                            <a href="javascript:void(0)" style="color: white; opacity: 0.8;">Privacy Policy</a>
-                            <a href="javascript:void(0)" style="color: white; opacity: 0.8;">Terms of Service</a>
-                        </div>
-                    </div>
-                </div>
-                <div style="text-align: center; margin-top: 3rem; opacity: 0.5; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 2rem;">
-                    © 2026 FindOurOwn. All rights reserved.
-                </div>
-            </div>
-        `;
+        f.innerHTML = `<div class="container" style="text-align: center; padding: 2rem 0; border-top: 1px solid #eee;">© 2026 FindOurOwn. Presentation Date: June 8, 2026 (Monday)</div>`;
         return f;
     }
 }
